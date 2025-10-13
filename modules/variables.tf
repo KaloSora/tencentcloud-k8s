@@ -15,3 +15,8 @@ variable "regoin" {
   description = "tencent cloud region"
   default = "ap-hongkong"
 }
+
+variable "password" {
+  type = string
+  description = "tencent cloud instance password"
+}
