@@ -7,7 +7,10 @@ Execute below command
 ```bash
 cd modules
 terraform init
+```
 
 2. Create vm on tencent cloud
+If you need to modify instance login password, check vars file `dev.tfvars`
 ```bash
 terraform apply -target=module.cvm -var-file="./dev.tfvars"
+```
