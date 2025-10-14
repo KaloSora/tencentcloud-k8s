@@ -10,7 +10,7 @@ variable "secret_key" {
   default = "Your Access Key"
 }
 
-variable "regoin" {
+variable "region" {
   type = string
   description = "tencent cloud region"
   default = "ap-hongkong"
@@ -19,4 +19,9 @@ variable "regoin" {
 variable "password" {
   type = string
   description = "tencent cloud instance password"
+}
+
+variable "bucket_name" {
+  type = string
+  description = "tencent cloud cos backend bucket name"
 }

@@ -3,13 +3,39 @@ This repository mainly use terraform to create vm and deploy k8s on tencent clou
 
 # Usage
 Execute below command
-1. Terraform init
+1. Install tencent cloud cli and input secret key/id
+```bash
+# Make sure python3 installed on your PC
+sudo pip install tccli
+tccli --version
+tccli configure
+
+# Install cos command line
+pip install coscmd
+coscmd mb cos://cvm-k8s-config
+```
+Secret id and secret key will be stored to `~/.tccli/default.credential`
+coscmd config will be stored at `/Users/YOUUSERNAME/.cos.conf`
+Tencent cloud cli user guide can refer to [Tencent Cloud cli](https://cloud.tencent.com/document/product/440/34012)
+
+2. Create cos backend bucket via tencent cloud cli
+```bash
+coscmd config -a <secreate_id> -s <secret_key> -r <region> -b <bucket>
+coscmd -b cvm-k8s-config-<APPID> -r gz createbucket
+
+# For example
+coscmd -b cvm-k8s-config-1304007562 -r gz createbucket
+```
+By installing the tencent cloud sdk, we can create the backend bucket before terraform init.
+If any `403` error, please refer to [Tencent Cloud troubleshoot](https://cloud.tencent.com/document/product/436/54303)
+
+3. Terraform init
 ```bash
 cd modules
-terraform init
+terraform init -backend-config="bucket=cvm-k8s-config-1304007562" -backend-config="region=ap-guangzhou"
 ```
 
-2. Create vm on tencent cloud
+4. Create vm on tencent cloud
 ```bash
 terraform apply -target=module.cvm -var-file="./dev.tfvars"
 ```
