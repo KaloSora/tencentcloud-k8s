@@ -1,6 +1,6 @@
 locals {
   login_user = "ubuntu"
-  script_template = "${path.module}/k8s_init.sh.tpl"
+  script_template = "${path.module}/template/k8s_init.sh.tpl"
   script_remote = "/tmp/k8s_init.sh"
 }
 
@@ -79,7 +79,7 @@ resource "null_resource" "connect_cvm" {
 
   # Define cvm connection
   connection {
-    host     = tencentcloud_instance.ubuntu[0].public_ip
+    host     = tencentcloud_instance.web[0].public_ip
     type     = "ssh"
     user     = local.login_user
     password = var.password
@@ -96,7 +96,7 @@ resource "null_resource" "connect_cvm" {
     content = templatefile(
       "${local.script_template}",
       {
-        "public_ip" : "${tencentcloud_instance.ubuntu[0].public_ip}"
+        "public_ip" : "${tencentcloud_instance.web[0].public_ip}"
       }
     )
   }
