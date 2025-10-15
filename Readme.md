@@ -31,9 +31,12 @@ If any `403` error, please refer to [Tencent Cloud troubleshoot](https://cloud.t
 
 3. Terraform init
 ```bash
+export TF_VAR_secret_id="YOU_SECRET_ID"
+export TF_VAR_secret_key="YOU_SECRET_KEY"
 cd modules
-terraform init -backend-config="bucket=cvm-k8s-config-1304007562" -backend-config="region=ap-guangzhou"
+terraform init -backend-config="bucket=cvm-k8s-config-1304007562" -backend-config="region=ap-guangzhou" -backend-config="secret_id=${TF_VAR_secret_id}" -backend-config="secret_key=${TF_VAR_secret_key}"
 ```
+For tencent cloud oss backend, must provide the secret id and secret key, otherwise it will return 403 Access Denied error.
 
 4. Create vm on tencent cloud
 ```bash
