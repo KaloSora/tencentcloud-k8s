@@ -20,8 +20,3 @@ variable "password" {
   type = string
   description = "tencent cloud instance password"
 }
-
-variable "bucket_name" {
-  type = string
-  description = "tencent cloud cos backend bucket name"
-}
