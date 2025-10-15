@@ -1,0 +1,4 @@
+modules/.terraform/
+modules/.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
