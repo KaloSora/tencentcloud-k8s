@@ -42,6 +42,7 @@ resource "tencentcloud_instance" "web" {
     command = <<EOT
 echo "K8s instance IP: ${tencentcloud_instance.web[0].public_ip}"
 echo "K8s instance ID: ${tencentcloud_instance.web[0].id}"
+echo "K8s instance login username: ubuntu - Using ubuntu as image"
 echo "K8s instance login password: ${var.password}"
 EOT
   }
