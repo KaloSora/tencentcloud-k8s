@@ -1,9 +1,15 @@
+locals {
+  login_user = "ubuntu"
+  script_template = "${path.module}/k8s_init.sh.tpl"
+  script_remote = "/tmp/k8s_init.sh"
+}
+
 # Get availability zones
 data "tencentcloud_availability_zones_by_product" "default" {
   product = "cvm"
 }
 
-# Get availability images
+# Get Ubuntu images
 data "tencentcloud_images" "default" {
   image_type = ["PUBLIC_IMAGE"]
   os_name    = "ubuntu"
@@ -42,7 +48,7 @@ resource "tencentcloud_instance" "web" {
     command = <<EOT
 echo "K8s instance IP: ${tencentcloud_instance.web[0].public_ip}"
 echo "K8s instance ID: ${tencentcloud_instance.web[0].id}"
-echo "K8s instance login username: ubuntu - Using ubuntu as image"
+echo "K8s instance login username: ${local.login_user} - Using ubuntu as image"
 echo "K8s instance login password: ${var.password}"
 EOT
   }
@@ -65,4 +71,42 @@ resource "tencentcloud_security_group_lite_rule" "default" {
   egress = [
     "ACCEPT#0.0.0.0/0#ALL#ALL"
   ]
+}
+
+# Connect to cvm to install k8s
+resource "null_resource" "connect_cvm" {
+  depends_on = [tencentcloud_instance.web]
+
+  # Define cvm connection
+  connection {
+    host     = tencentcloud_instance.ubuntu[0].public_ip
+    type     = "ssh"
+    user     = local.login_user
+    password = var.password
+  }
+
+  # Only when template file changed, it will re-run the provisioner
+  triggers = {
+    script_hash = filemd5("${local.script_template}")
+  }
+
+  # Upload local file template to cvm
+  provisioner "file" {
+    destination = "${local.script_remote}"
+    content = templatefile(
+      "${local.script_template}",
+      {
+        "public_ip" : "${tencentcloud_instance.ubuntu[0].public_ip}"
+      }
+    )
+  }
+
+  # Execute script on remote cvm
+  provisioner "remote-exec" {
+
+    inline = [
+      "chmod +x ${local.script_remote}",
+      "sh ${local.script_remote}",
+    ]
+  }
 }
