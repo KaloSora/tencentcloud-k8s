@@ -51,3 +51,14 @@ terraform destroy -target=module.k8s-cvm -var-file="./dev.tfvars"
 ```
 
 If you need to modify instance login password, check vars file `dev.tfvars`
+
+**If you just want a quick and simple k8s environment, can execute below module**
+
+It will only create 1 cvm and install k3s
+``` bash
+terraform plan -target=module.k3s-cvm -var-file="./dev.tfvars"
+terraform apply -target=module.k3s-cvm -var-file="./dev.tfvars"
+
+# To destroy
+terraform destroy -target=module.k3s-cvm -var-file="./dev.tfvars"
+```
