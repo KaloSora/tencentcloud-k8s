@@ -15,7 +15,9 @@ pip install coscmd
 coscmd mb cos://cvm-k8s-config
 ```
 Secret id and secret key will be stored to `~/.tccli/default.credential`
+
 coscmd config will be stored at `/Users/YOUUSERNAME/.cos.conf`
+
 Tencent cloud cli user guide can refer to [Tencent Cloud cli](https://cloud.tencent.com/document/product/440/34012)
 
 2. Create cos backend bucket via tencent cloud cli
@@ -27,6 +29,7 @@ coscmd -b cvm-k8s-config-<APPID> -r gz createbucket
 coscmd -b cvm-k8s-config-1304007562 -r gz createbucket
 ```
 By installing the tencent cloud sdk, we can create the backend bucket before terraform init.
+
 If any `403` error, please refer to [Tencent Cloud troubleshoot](https://cloud.tencent.com/document/product/436/54303)
 
 3. Terraform init
