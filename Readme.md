@@ -37,7 +37,11 @@ terraform init -backend-config="bucket=cvm-k8s-config-1304007562" -backend-confi
 
 4. Create vm on tencent cloud
 ```bash
+terraform plan -target=module.cvm -var-file="./dev.tfvars"
 terraform apply -target=module.cvm -var-file="./dev.tfvars"
+
+# To destroy 
+terraform destroy -target=module.cvm -var-file="./dev.tfvars"
 ```
 
 If you need to modify instance login password, check vars file `dev.tfvars`

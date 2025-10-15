@@ -36,6 +36,15 @@ resource "tencentcloud_instance" "web" {
   instance_charge_type       = "SPOTPAID"
   orderly_security_groups    = [tencentcloud_security_group.default.id]
   password                   = var.password
+
+  # Add local-exec to echo instance ip, id and password on console
+  provisioner "local-exec" {
+    command = <<EOT
+echo "K8s instance IP: ${tencentcloud_instance.web[0].public_ip}"
+echo "K8s instance ID: ${tencentcloud_instance.web[0].id}"
+echo "K8s instance login password: ${var.password}"
+EOT
+  }
 }
 
 # Create security group
