@@ -62,3 +62,15 @@ terraform apply -target=module.k3s-cvm -var-file="./dev.tfvars"
 # To destroy
 terraform destroy -target=module.k3s-cvm -var-file="./dev.tfvars"
 ```
+
+Here is difference between k8s and k3s
+|       | Kubernetes (K8s)       | K3s       |
+|-----------|-----------|-----------|
+| Design    | Full-featured enterprise-grade   | Lightweight, edge and IoT-focused    |
+| Resources    | High resource demands    | Optimized for low-resource environments    |
+| Components    | Multi-component, uses etcd    | Single binary, SQLite default (etcd optional)    |
+| Installation    | Complex setup    | Simple, single-binary installation    |
+| Use cases    | Large-scale production    | Edge, IoT, local dev, and small clusters    |
+| Security    | Advanced, multi-tenant    | Basic, single-tenant; manual hardening needed    |
+| Performance    | High scalability for extensive workloads    | Efficient in limited environments, faster setup    |
+| Community support    | Strong, with a vast community and tooling    | Growing community, more limited tooling    |
