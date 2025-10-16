@@ -75,3 +75,11 @@ Here is difference between k8s and k3s
 | Security        | Advanced, multi-tenant    | Basic, single-tenant; manual hardening needed    |
 | Performance     | High scalability for extensive workloads    | Efficient in limited environments, faster setup    |
 | Community support    | Strong, with a vast community and tooling    | Growing community, more limited tooling    |
+
+
+5. SSH to server to perform health check
+```bash
+ssh USERNAME@YOURIP
+
+kubectl get ns
+```
