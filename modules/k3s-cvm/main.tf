@@ -74,10 +74,11 @@ resource "tencentcloud_security_group_lite_rule" "default" {
 }
 
 # Deploy k3s to the instance
+# K3s module guide: https://github.com/xunleii/terraform-module-k3s?tab=readme-ov-file
 module "k3s" {
   depends_on = [ tencentcloud_instance.web ]
   source                   = "xunleii/k3s/module"
-  k3s_version              = "v1.25.11+k3s1"
+  k3s_version              = "latest"
   generate_ca_certificates = true
   global_flags = [
     "--tls-san ${tencentcloud_instance.web[0].public_ip}",
