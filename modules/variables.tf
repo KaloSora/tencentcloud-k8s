@@ -20,3 +20,7 @@ variable "password" {
   type = string
   description = "tencent cloud instance password"
 }
+
+variable "k8s_map" {
+  description = "K8s map list"
+}

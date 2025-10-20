@@ -14,3 +14,7 @@ variable "memory_size" {
   description = "The memory size(GB) of the instance."
   default = 8
 }
+
+variable "k8s_map" {
+  description = "K8s map list"
+}

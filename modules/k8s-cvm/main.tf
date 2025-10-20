@@ -29,29 +29,32 @@ data "tencentcloud_instance_types" "default" {
 
 # Create a web server
 resource "tencentcloud_instance" "web" {
+  for_each                   = var.k8s_map
   depends_on                 = [tencentcloud_security_group_lite_rule.default]
-  count                      = 1
-  instance_name              = "web server"
+  instance_name              = "k8s-${each.key}"
   availability_zone          = data.tencentcloud_availability_zones_by_product.default.zones.0.name
   image_id                   = data.tencentcloud_images.default.images.0.image_id
   instance_type              = data.tencentcloud_instance_types.default.instance_types.0.instance_type
-  system_disk_type           = "CLOUD_PREMIUM"
-  system_disk_size           = 50
+  system_disk_type           = each.value.system_disk_type
+  system_disk_size           = each.value.system_disk_size
   allocate_public_ip         = true
   internet_max_bandwidth_out = 100
-  instance_charge_type       = "SPOTPAID"
+  instance_charge_type       = each.value.instance_charge_type
   orderly_security_groups    = [tencentcloud_security_group.default.id]
   password                   = var.password
 
   # Add local-exec to echo instance ip, id and password on console
-  provisioner "local-exec" {
-    command = <<EOT
-echo "K8s instance IP: ${tencentcloud_instance.web[0].public_ip}"
-echo "K8s instance ID: ${tencentcloud_instance.web[0].id}"
-echo "K8s instance login username: ${local.login_user} - Using ubuntu as image"
-echo "K8s instance login password: ${var.password}"
-EOT
-  }
+#   provisioner "local-exec" {
+#     command = <<EOT
+# echo "================= K8s Instance Info ================="
+# echo "K8s instance IP: ${tencentcloud_instance.web[0].public_ip}"
+# echo "K8s instance ID: ${tencentcloud_instance.web[0].id}"
+# echo "K8s instance login username: ${local.login_user} - Using ubuntu as image"
+# echo "K8s instance login password: ${var.password}"
+# echo "K8s ${each.key} server created."
+# echo "====================================================="
+# EOT
+#   }
 }
 
 # Create security group
@@ -74,39 +77,39 @@ resource "tencentcloud_security_group_lite_rule" "default" {
 }
 
 # Connect to cvm to install k8s
-resource "null_resource" "connect_cvm" {
-  depends_on = [tencentcloud_instance.web]
+# resource "null_resource" "connect_cvm" {
+#   depends_on = [tencentcloud_instance.web]
 
-  # Define cvm connection
-  connection {
-    host     = tencentcloud_instance.web[0].public_ip
-    type     = "ssh"
-    user     = local.login_user
-    password = var.password
-  }
+#   # Define cvm connection
+#   connection {
+#     host     = tencentcloud_instance.web[0].public_ip
+#     type     = "ssh"
+#     user     = local.login_user
+#     password = var.password
+#   }
 
-  # Only when template file changed, it will re-run the provisioner
-  triggers = {
-    script_hash = filemd5("${local.script_template}")
-  }
+#   # Only when template file changed, it will re-run the provisioner
+#   triggers = {
+#     script_hash = filemd5("${local.script_template}")
+#   }
 
-  # Upload local file template to cvm
-  provisioner "file" {
-    destination = "${local.script_remote}"
-    content = templatefile(
-      "${local.script_template}",
-      {
-        "public_ip" : "${tencentcloud_instance.web[0].public_ip}"
-      }
-    )
-  }
+#   # Upload local file template to cvm
+#   provisioner "file" {
+#     destination = "${local.script_remote}"
+#     content = templatefile(
+#       "${local.script_template}",
+#       {
+#         "public_ip" : "${tencentcloud_instance.web[0].public_ip}"
+#       }
+#     )
+#   }
 
-  # Execute script on remote cvm
-  provisioner "remote-exec" {
+#   # Execute script on remote cvm
+#   provisioner "remote-exec" {
 
-    inline = [
-      "chmod +x ${local.script_remote}",
-      "sh ${local.script_remote}",
-    ]
-  }
-}
+#     inline = [
+#       "chmod +x ${local.script_remote}",
+#       "sh ${local.script_remote}",
+#     ]
+#   }
+# }
