@@ -1,8 +1,34 @@
 locals {
-  login_user = "ubuntu"
-  script_template = "${path.module}/template/k8s_init.sh.tpl"
-  script_remote = "/tmp/k8s_init.sh"
+  cvm_key_name = "cvm_ssh_key"
+  cvm_key_filename = "${path.module}/ssh_key/cvm_key.pem"
+  cvm_key_filename_pub = "${path.module}/ssh_key/cvm_key.pub"
+
+  init_script = "init.sh"
+  init_script_tpl = "init.sh.tpl"
 }
+
+# Create local ssh key pair
+# Important: Do not commit the private key to Github
+resource "tls_private_key" "cvm_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "local_file" "cvm_private_key" {
+  content  = tls_private_key.cvm_key.private_key_pem
+  filename = local.cvm_key_filename
+  
+  provisioner "local-exec" {
+    command = "chmod 600 ${local.cvm_key_filename}"
+  }
+}
+
+# Upload keypair to tencent cloud
+resource "tencentcloud_key_pair" "cvm-key" {
+  key_name   = local.cvm_key_name
+  public_key = tls_private_key.cvm_key.public_key_openssh
+}
+
 
 # Get availability zones
 data "tencentcloud_availability_zones_by_product" "default" {
@@ -10,55 +36,46 @@ data "tencentcloud_availability_zones_by_product" "default" {
 }
 
 # Get Ubuntu images
-data "tencentcloud_images" "default" {
+data "tencentcloud_images" "ubuntu" {
   image_type = ["PUBLIC_IMAGE"]
-  os_name    = "ubuntu"
+  image_name_regex = var.cvm_os_regex
 }
 
 # Get availability instance types
-data "tencentcloud_instance_types" "default" {
+data "tencentcloud_instance_types" "cvm_type" {
   # Filter instance family
   filter {
     name   = "instance-family"
     values = ["S5"]
   }
 
-  cpu_core_count = var.cpu_core_count
-  memory_size    = var.memory_size
+  filter {
+    name   = "zone"
+    values = ["${var.cvm_availability_zone}"]
+  }
+
+  cpu_core_count = var.cvm_cpu_core_count
+  memory_size    = var.cvm_memory_size
 }
 
-# Create a web server
-resource "tencentcloud_instance" "web" {
-  for_each                   = var.k8s_map
+# Create a k3s server
+resource "tencentcloud_instance" "k3s_server" {
   depends_on                 = [tencentcloud_security_group_lite_rule.default]
-  instance_name              = "k8s-${each.key}"
+  count                      = 1
+  instance_name              = "k3s server"
   availability_zone          = data.tencentcloud_availability_zones_by_product.default.zones.0.name
-  image_id                   = data.tencentcloud_images.default.images.0.image_id
-  instance_type              = data.tencentcloud_instance_types.default.instance_types.0.instance_type
-  system_disk_type           = each.value.system_disk_type
-  system_disk_size           = each.value.system_disk_size
+  image_id                   = data.tencentcloud_images.ubuntu.images.0.image_id
+  instance_type              = data.tencentcloud_instance_types.cvm_type.instance_types.0.instance_type
+  system_disk_type           = "CLOUD_PREMIUM"
+  system_disk_size           = 100
   allocate_public_ip         = true
   internet_max_bandwidth_out = 100
-  instance_charge_type       = each.value.instance_charge_type
+  instance_charge_type       = var.cvm_charge_type
   orderly_security_groups    = [tencentcloud_security_group.default.id]
-  password                   = var.password
 
-}
+  key_ids                    = [tencentcloud_key_pair.cvm-key.id]
 
-resource "null_resource" "print_instance_info" {
-  for_each = tencentcloud_instance.web
-
-  provisioner "local-exec" {
-    command = <<EOT
-echo "================= K8s Instance Info ================="
-echo "K8s instance IP: ${each.value.public_ip}"
-echo "K8s instance ID: ${each.value.id}"
-echo "K8s instance login username: ${local.login_user} - Using ubuntu as image"
-echo "K8s instance login password: ${var.password}"
-echo "K8s ${each.key} server created."
-echo "====================================================="
-EOT
-  }
+  # password = var.password
 }
 
 # Create security group
@@ -80,40 +97,62 @@ resource "tencentcloud_security_group_lite_rule" "default" {
   ]
 }
 
-# Connect to cvm to install k8s
-# resource "null_resource" "connect_cvm" {
-#   depends_on = [tencentcloud_instance.web]
 
-#   # Define cvm connection
-#   connection {
-#     host     = tencentcloud_instance.web[0].public_ip
-#     type     = "ssh"
-#     user     = local.login_user
-#     password = var.password
-#   }
+# Setup the CVM
+resource "null_resource" "ssh_connection" {
 
-#   # Only when template file changed, it will re-run the provisioner
-#   triggers = {
-#     script_hash = filemd5("${local.script_template}")
-#   }
+  # No need to set depends_on actually because the resource refer to the public ip already
+  # Just a safety measure
+  depends_on = [ tencentcloud_instance.k3s_server ]
+  
+  # Condition: once script changed, this module will re-run
+  triggers = {
+    script_hash = filemd5("${path.module}/script/${local.init_script_tpl}")
+  }
 
-#   # Upload local file template to cvm
-#   provisioner "file" {
-#     destination = "${local.script_remote}"
-#     content = templatefile(
-#       "${local.script_template}",
-#       {
-#         "public_ip" : "${tencentcloud_instance.web[0].public_ip}"
-#       }
-#     )
-#   }
+  connection {
+    type        = "ssh"
+    host        = tencentcloud_instance.k3s_server[0].public_ip
+    user        = var.cvm_login_user
+    #password    = var.password
+    private_key = tls_private_key.cvm_key.private_key_pem
+    port        = 22
+    timeout     = "2m"
+  }
 
-#   # Execute script on remote cvm
-#   provisioner "remote-exec" {
+  # # Local-exec provisioner to run commands on your local machine
+  # provisioner "local-exec" {
+  #   command = <<-EOT
+  #       echo "K3s Instance IP: ${tencentcloud_instance.k3s_server[0].public_ip}"
+  #       echo "K3s Instance ID: ${tencentcloud_instance.k3s_server[0].id}"
+  #       echo "Use the command to connect: ssh -i k3s-cvm/ssh_key/cvm_key.pem ubuntu@${tencentcloud_instance.k3s_server[0].public_ip}"
+  #   EOT
+  # }
 
-#     inline = [
-#       "chmod +x ${local.script_remote}",
-#       "sh ${local.script_remote}",
-#     ]
-#   }
-# }
+  # Local script upload with terraform template file
+  provisioner "file" {
+    destination = "/tmp/${local.init_script}"
+    content = templatefile(
+      "${path.module}/script/${local.init_script_tpl}",
+      {
+        "instance_ip" : "${tencentcloud_instance.k3s_server[0].public_ip}"
+        "instance_id" : "${tencentcloud_instance.k3s_server[0].id}"
+        "target_user" : "${var.cvm_login_user}"
+      }
+    )
+  }
+
+  # Remote-exec provisioner to run commands on the CVM instance via SSH
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/${local.init_script}",
+
+      "echo 'Start execute init script ...'",
+      "ls -la /tmp/${local.init_script}",
+
+      # Run the setup script
+      "sudo sh /tmp/${local.init_script}",
+      "echo 'Execution completed!'"
+    ]
+  }
+}

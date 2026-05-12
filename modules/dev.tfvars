@@ -1,18 +1,9 @@
-region = "ap-guangzhou"
+region = "ap-hongkong"
 
-# Modify your instance password
-password = "MyVMPassw0rd!"
-
-# K8s map configuration
-k8s_map = {
-  "master" = {
-    "system_disk_type" = "CLOUD_PREMIUM",
-    "system_disk_size" = 50,
-    "instance_charge_type" = "SPOTPAID" # POSTPAID_BY_HOUR, SPOTPAID, PREPAID
-  }
-#   "node1" = {
-#     "system_disk_type" = "CLOUD_PREMIUM",
-#     "system_disk_size" = 50,
-#     "instance_charge_type" = "POSTPAID_BY_HOUR"
-#   }
-}
+# CVM variables
+cvm_availability_zone = "ap-hongkong-2"
+cvm_cpu_core_count = 4
+cvm_memory_size    = 8
+cvm_charge_type    = "POSTPAID_BY_HOUR"
+cvm_os_regex       = "^Rocky Linux 9\\.3"
+cvm_login_user     = "root"
