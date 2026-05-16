@@ -72,8 +72,8 @@ EOF
     systemctl start docker
 
     # 2. Install cri-dockerd
-    CRI_DOCKERD_VERSION="v0.3.15"
-    wget https://github.com/Mirantis/cri-dockerd/releases/download/$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
+    CRI_DOCKERD_VERSION="0.3.15"
+    wget https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
     tar -xzf cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
     mv cri-dockerd /usr/local/bin/
     chmod +x /usr/local/bin/cri-dockerd
@@ -115,8 +115,9 @@ WantedBy=sockets.target
 EOF
 
     systemctl daemon-reload
-    systemctl enable cri-docker.service
-    systemctl start cri-docker.service
+    systemctl enable cri-docker
+    systemctl start cri-docker
+    systemctl is-active cri-docker
 
     # 3. Add Kubernetes AliCloud yum source
     cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo
