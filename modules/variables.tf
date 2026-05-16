@@ -27,18 +27,6 @@ variable "cvm_availability_zone" {
   default = "ap-hongkong-2"
 }
 
-variable "cvm_cpu_core_count" {
-  type = number
-  description = "The CPU core count of the instance."
-  default = 4
-}
-
-variable "cvm_memory_size" {
-  type = number
-  description = "The memory size(GB) of the instance."
-  default = 8
-}
-
 variable "cvm_charge_type" {
   type = string
   description = "The charge type of the instance. Valid values: POSTPAID_BY_HOUR, SPOTPAID."
@@ -53,4 +41,8 @@ variable "cvm_os_regex" {
 variable "cvm_login_user" {
   type = string
   description = "cvm login user"
+}
+
+variable "k8s_cluster" {
+  description = "K8s cluster object"
 }

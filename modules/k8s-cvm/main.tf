@@ -43,6 +43,9 @@ data "tencentcloud_images" "ubuntu" {
 
 # Get availability instance types
 data "tencentcloud_instance_types" "cvm_type" {
+
+  for_each = var.k8s_cluster
+
   # Filter instance family
   filter {
     name   = "instance-family"
@@ -54,18 +57,20 @@ data "tencentcloud_instance_types" "cvm_type" {
     values = ["${var.cvm_availability_zone}"]
   }
 
-  cpu_core_count = var.cvm_cpu_core_count
-  memory_size    = var.cvm_memory_size
+  cpu_core_count = each.value.cpu_core_count
+  memory_size    = each.value.memory_size
 }
 
 # Create a k3s server
 resource "tencentcloud_instance" "k3s_server" {
+
+  for_each = var.k8s_cluster
+
   depends_on                 = [tencentcloud_security_group_lite_rule.default]
-  count                      = 1
-  instance_name              = "k3s server"
+  instance_name              = "${each.value.instance_name}"
   availability_zone          = data.tencentcloud_availability_zones_by_product.default.zones.0.name
   image_id                   = data.tencentcloud_images.ubuntu.images.0.image_id
-  instance_type              = data.tencentcloud_instance_types.cvm_type.instance_types.0.instance_type
+  instance_type              = data.tencentcloud_instance_types.cvm_type[each.key].instance_types.0.instance_type
   system_disk_type           = "CLOUD_PREMIUM"
   system_disk_size           = 100
   allocate_public_ip         = true
@@ -75,7 +80,12 @@ resource "tencentcloud_instance" "k3s_server" {
 
   key_ids                    = [tencentcloud_key_pair.cvm-key.id]
 
-  # password = var.password
+  tags = {
+    Name = each.value.instance_name
+    Role = each.key
+    CPU  = tostring(each.value.cpu_core_count)
+    Mem  = tostring(each.value.memory_size)
+  }
 }
 
 # Create security group
@@ -101,18 +111,19 @@ resource "tencentcloud_security_group_lite_rule" "default" {
 # Setup the CVM
 resource "null_resource" "ssh_connection" {
 
-  # No need to set depends_on actually because the resource refer to the public ip already
-  # Just a safety measure
-  depends_on = [ tencentcloud_instance.k3s_server ]
+  for_each = tencentcloud_instance.k3s_server  
+
+  depends_on = [tencentcloud_instance.k3s_server]
   
   # Condition: once script changed, this module will re-run
   triggers = {
     script_hash = filemd5("${path.module}/script/${local.init_script_tpl}")
+    instance_id = each.value.id
   }
 
   connection {
     type        = "ssh"
-    host        = tencentcloud_instance.k3s_server[0].public_ip
+    host        = each.value.public_ip
     user        = var.cvm_login_user
     #password    = var.password
     private_key = tls_private_key.cvm_key.private_key_pem
@@ -120,23 +131,14 @@ resource "null_resource" "ssh_connection" {
     timeout     = "2m"
   }
 
-  # # Local-exec provisioner to run commands on your local machine
-  # provisioner "local-exec" {
-  #   command = <<-EOT
-  #       echo "K3s Instance IP: ${tencentcloud_instance.k3s_server[0].public_ip}"
-  #       echo "K3s Instance ID: ${tencentcloud_instance.k3s_server[0].id}"
-  #       echo "Use the command to connect: ssh -i k3s-cvm/ssh_key/cvm_key.pem ubuntu@${tencentcloud_instance.k3s_server[0].public_ip}"
-  #   EOT
-  # }
-
   # Local script upload with terraform template file
   provisioner "file" {
     destination = "/tmp/${local.init_script}"
     content = templatefile(
       "${path.module}/script/${local.init_script_tpl}",
       {
-        "instance_ip" : "${tencentcloud_instance.k3s_server[0].public_ip}"
-        "instance_id" : "${tencentcloud_instance.k3s_server[0].id}"
+        "instance_ip" : "${each.value.public_ip}"
+        "instance_id" : "${each.value.id}"
         "target_user" : "${var.cvm_login_user}"
       }
     )
