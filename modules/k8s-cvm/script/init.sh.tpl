@@ -75,7 +75,8 @@ EOF
     CRI_DOCKERD_VERSION="0.3.15"
     wget https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
     tar -xzf cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
-    mv cri-dockerd /usr/local/bin/
+    file cri-dockerd/cri-dockerd
+    mv cri-dockerd/cri-dockerd /usr/local/bin/
     chmod +x /usr/local/bin/cri-dockerd
 
     # Create systemd service and socket files for cri-dockerd
@@ -123,10 +124,10 @@ EOF
     cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
-baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-\$basearch
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
 enabled=1
 gpgcheck=1
-gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
 EOF
     dnf makecache
     dnf install -y kubelet-1.28.8 kubeadm-1.28.8 kubectl-1.28.8 --disableexcludes=kubernetes
@@ -136,6 +137,13 @@ EOF
     cat <<EOF | tee /etc/default/kubelet
 KUBELET_EXTRA_ARGS="--container-runtime=remote --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock"
 EOF
+
+    # Use cri-dockerd instead of containerd, so stop and disable containerd to avoid CRI conflict
+    if systemctl is-active containerd >/dev/null 2>&1; then
+        echo "Stopping and disabling containerd to avoid CRI conflict..."
+        systemctl stop containerd
+        systemctl disable containerd
+    fi
 
     # 5. Role judgment and cluster initialization/join
     ROLE=${instance_role}
@@ -163,7 +171,7 @@ EOF
         kubeadm token create --print-join-command | sed 's|$| --cri-socket=unix:///var/run/cri-dockerd.sock|' > $JOIN_CMD_FILE
 
         # Install Calico
-        kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27/manifests/tigera-operator.yaml
+        kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.4/manifests/tigera-operator.yaml
         cat <<EOF | kubectl apply -f -
 apiVersion: operator.tigera.io/v1
 kind: Installation
@@ -207,7 +215,7 @@ output() {
     echo "=== K8s CVM ${instance_name} Completed ==="
     echo "K8s Instance IP: ${instance_ip}"
     echo "K8s Instance ID: ${instance_id}"
-    echo "Execute cmd to connect server: ssh -i k8s-cvm/ssh_key/cvm_key.pem ubuntu@${instance_ip}"
+    echo "Execute cmd to connect server: ssh -i k8s-cvm/ssh_key/cvm_key.pem root@${instance_ip}"
 }
 
 main() {
