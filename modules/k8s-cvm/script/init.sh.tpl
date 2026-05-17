@@ -51,6 +51,8 @@ setup_k8s() {
     set -e
     echo "=== Start to Install K8s ==="
 
+    K8S_VERSION="1.28.8"
+
     # 1. Install docker engine
     dnf install -y yum-utils
     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -130,20 +132,13 @@ gpgcheck=1
 gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
 EOF
     dnf makecache
-    dnf install -y kubelet-1.28.8 kubeadm-1.28.8 kubectl-1.28.8 --disableexcludes=kubernetes
+    dnf install -y kubelet-$K8S_VERSION kubeadm-$K8S_VERSION kubectl-$K8S_VERSION --disableexcludes=kubernetes
     systemctl enable kubelet
 
     # 4. Set kubelet connect with cri-dockerd
     cat <<EOF | tee /etc/default/kubelet
 KUBELET_EXTRA_ARGS="--container-runtime=remote --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock"
 EOF
-
-    # Use cri-dockerd instead of containerd, so stop and disable containerd to avoid CRI conflict
-    if systemctl is-active containerd >/dev/null 2>&1; then
-        echo "Stopping and disabling containerd to avoid CRI conflict..."
-        systemctl stop containerd
-        systemctl disable containerd
-    fi
 
     # 5. Role judgment and cluster initialization/join
     ROLE=${instance_role}
@@ -154,13 +149,16 @@ EOF
         echo ">>> Start to configure Kubernetes Master node"
 
         # Pull required images first to speed up the initialization process
-        kubeadm config images pull --image-repository=registry.aliyuncs.com/google_containers
+        kubeadm config images pull \
+            --image-repository=registry.aliyuncs.com/google_containers \
+            --kubernetes-version=v$K8S_VERSION \
+            --cri-socket=unix:///var/run/cri-dockerd.sock
 
         kubeadm init \
             --image-repository=registry.aliyuncs.com/google_containers \
             --pod-network-cidr=192.168.0.0/16 \
-            --apiserver-advertise-address=$(ip route get 1 | awk '{print $NF;exit}') \
-            --kubernetes-version=v1.28.8 \
+            --apiserver-advertise-address=$(hostname -I | awk '{print $1}') \
+            --kubernetes-version=v$K8S_VERSION \
             --cri-socket=unix:///var/run/cri-dockerd.sock
 
         mkdir -p $HOME/.kube
@@ -187,6 +185,13 @@ spec:
       nodeSelector: all()
 EOF
         echo "Master node initialized, join command generated: $JOIN_CMD_FILE"
+
+        if [[ "$ROLE" == "master" ]]; then
+            sleep 30  # Wait a bit for the cluster to stabilize
+            echo ""
+            echo "=== Cluster Health Summary ==="
+            kubectl get node -o wide 2>/dev/null || echo "Unable to get nodes (kubectl not ready yet)"
+        fi
 
     elif [[ "$ROLE" == "node" ]]; then
         echo ">>> Start to configure Kubernetes Node node"
