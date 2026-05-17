@@ -185,13 +185,12 @@ spec:
       nodeSelector: all()
 EOF
         echo "Master node initialized, join command generated: $JOIN_CMD_FILE"
-
-        if [[ "$ROLE" == "master" ]]; then
-            sleep 30  # Wait a bit for the cluster to stabilize
-            echo ""
-            echo "=== Cluster Health Summary ==="
-            kubectl get node -o wide 2>/dev/null || echo "Unable to get nodes (kubectl not ready yet)"
-        fi
+        
+        # Wait a bit for the cluster to stabilize
+        sleep 30  
+        echo ""
+        echo "=== Cluster Health Summary ==="
+        kubectl get node -o wide 2>/dev/null || echo "Unable to get nodes (kubectl not ready yet)"
 
     elif [[ "$ROLE" == "node" ]]; then
         echo ">>> Start to configure Kubernetes Node node"

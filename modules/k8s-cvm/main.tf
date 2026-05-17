@@ -176,9 +176,20 @@ resource "null_resource" "master_provision" {
       "chmod +x /tmp/${local.init_script}",
 
       # Run the setup script
-      "sudo sh /tmp/${local.init_script}",
+      "sudo sh /tmp/${local.init_script} > /tmp/${each.value.instance_name}.log 2>&1",
       "echo 'Execution completed!'"
     ]
+  }
+
+  # Download log file back to local for debugging
+  provisioner "local-exec" {
+    command = <<-EOT
+      mkdir -p ${path.module}/logs
+      scp -i ${tls_private_key.cvm_key.private_key_pem} \
+          -o StrictHostKeyChecking=no \
+          ${var.cvm_login_user}@${each.value.public_ip}:/tmp/${each.value.instance_name}.log \
+          ${path.module}/logs/${each.value.instance_name}.log
+    EOT
   }
 }
 
