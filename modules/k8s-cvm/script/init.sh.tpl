@@ -197,7 +197,7 @@ EOF
 
         if [[ ! -f "$JOIN_CMD_FILE" ]] && [[ -n "$MASTER_IP" ]]; then
             echo "Trying to copy join command from master node $MASTER_IP..."
-            scp -i ${ssh_key_path} root@${instance_master_ip}:/root/join_command.sh /root/
+            scp -i ${ssh_key_path} -o StrictHostKeyChecking=no root@${instance_master_ip}:/root/join_command.sh /root/
         fi
 
         if [[ -f "$JOIN_CMD_FILE" ]]; then
