@@ -203,12 +203,6 @@ EOF
         if [[ -f "$JOIN_CMD_FILE" ]]; then
             bash $JOIN_CMD_FILE
             echo "Node node has joined the cluster"
-
-            # Health check for node
-            sleep 30
-            kubectl cluster-info
-            kubectl get nodes -o wide
-            kubectl get pods -n kube-system
         else
             echo "Error: Join command file $JOIN_CMD_FILE not found, and automatic retrieval failed"
             exit 1
