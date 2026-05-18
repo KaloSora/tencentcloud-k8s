@@ -187,7 +187,7 @@ EOF
         echo "Master node initialized, join command generated: $JOIN_CMD_FILE"
         
         # Wait a bit for the cluster to stabilize
-        sleep 30  
+        sleep 60  
         echo ""
         echo "=== Cluster Health Summary ==="
         kubectl get node -o wide 2>/dev/null || echo "Unable to get nodes (kubectl not ready yet)"

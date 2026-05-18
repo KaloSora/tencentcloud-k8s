@@ -15,7 +15,7 @@ locals {
   }
 
   # Get the 1st master private ip
-  master_private_ip = length(local.master_instances) > 0 ? one(local.master_instances).private_ip : ""
+  master_private_ip = length(local.master_instances) > 0 ? one(values(local.master_instances)).private_ip : ""
 }
 
 # Create local ssh key pair
@@ -145,7 +145,7 @@ resource "null_resource" "master_provision" {
   }
   
   # Upload private key for server connection
-    provisioner "file" {
+  provisioner "file" {
     content     = tls_private_key.cvm_key.private_key_pem
     destination = local.cvm_key_server_private_path
   }
@@ -185,7 +185,7 @@ resource "null_resource" "master_provision" {
   provisioner "local-exec" {
     command = <<-EOT
       mkdir -p ${path.module}/logs
-      scp -i ${tls_private_key.cvm_key.private_key_pem} \
+      scp -i ${local.cvm_key_filename} \
           -o StrictHostKeyChecking=no \
           ${var.cvm_login_user}@${each.value.public_ip}:/tmp/${each.value.instance_name}.log \
           ${path.module}/logs/${each.value.instance_name}.log
@@ -194,66 +194,77 @@ resource "null_resource" "master_provision" {
 }
 
 # Setup the CVM for K8s Node
-# resource "null_resource" "node_provision" {
+resource "null_resource" "node_provision" {
 
-#   for_each = {
-#     for k, inst in tencentcloud_instance.k8s_server : k => inst
-#     if can(regex("node", inst.instance_name))
-#   }
+  for_each = {
+    for k, inst in tencentcloud_instance.k8s_server : k => inst
+    if can(regex("node", inst.instance_name))
+  }
 
-#   # Wait for master initialization before provisioning node
-#   # Otherwise the join command will not be generated and the node setup will fail
-#   depends_on = [null_resource.master_provision]
+  # Wait for master initialization before provisioning node
+  # Otherwise the join command will not be generated and the node setup will fail
+  depends_on = [null_resource.master_provision]
   
-#   # Condition: once script changed, this module will re-run
-#   triggers = {
-#     script_hash = filemd5("${path.module}/script/${local.init_script_tpl}")
-#     instance_id = each.value.id
-#   }
+  # Condition: once script changed, this module will re-run
+  triggers = {
+    script_hash = filemd5("${path.module}/script/${local.init_script_tpl}")
+    instance_id = each.value.id
+  }
 
-#   connection {
-#     type        = "ssh"
-#     host        = each.value.public_ip
-#     user        = var.cvm_login_user
-#     private_key = tls_private_key.cvm_key.private_key_pem
-#     port        = 22
-#     timeout     = "2m"
-#   }
+  connection {
+    type        = "ssh"
+    host        = each.value.public_ip
+    user        = var.cvm_login_user
+    private_key = tls_private_key.cvm_key.private_key_pem
+    port        = 22
+    timeout     = "2m"
+  }
   
-#   # Upload private key for server connection
-#     provisioner "file" {
-#     content     = tls_private_key.cvm_key.private_key_pem
-#     destination = local.cvm_key_server_private_path
-#   }
+  # Upload private key for server connection
+    provisioner "file" {
+    content     = tls_private_key.cvm_key.private_key_pem
+    destination = local.cvm_key_server_private_path
+  }
 
-#   # Local script upload with terraform template file
-#   provisioner "file" {
-#     destination = "/tmp/${local.init_script}"
-#     content = templatefile(
-#       "${path.module}/script/${local.init_script_tpl}",
-#       {
-#         "instance_ip" = "${each.value.public_ip}"
-#         "instance_id" = "${each.value.id}"
-#         "instance_role"  = "node"
-#         "instance_name" = "${each.value.instance_name}"
-#         "instance_master_ip" = "${local.master_private_ip}"
-#         "ssh_key_path" = "${local.cvm_key_server_private_path}"
-#       }
-#     )
-#   }
+  # Local script upload with terraform template file
+  provisioner "file" {
+    destination = "/tmp/${local.init_script}"
+    content = templatefile(
+      "${path.module}/script/${local.init_script_tpl}",
+      {
+        "instance_ip" = "${each.value.public_ip}"
+        "instance_id" = "${each.value.id}"
+        "instance_role"  = "node"
+        "instance_name" = "${each.value.instance_name}"
+        "instance_master_ip" = "${local.master_private_ip}"
+        "ssh_key_path" = "${local.cvm_key_server_private_path}"
+      }
+    )
+  }
 
-#   # Remote-exec provisioner to run commands on the CVM instance via SSH
-#   provisioner "remote-exec" {
-#     inline = [
+  # Remote-exec provisioner to run commands on the CVM instance via SSH
+  provisioner "remote-exec" {
+    inline = [
 
-#       "chmod 600 ${local.cvm_key_server_private_path}",
-#       "echo 'IdentityFile ${local.cvm_key_server_private_path}' >> /root/.ssh/config",
-#       "chmod 600 /root/.ssh/config",
-#       "chmod +x /tmp/${local.init_script}",
+      "chmod 600 ${local.cvm_key_server_private_path}",
+      "echo 'IdentityFile ${local.cvm_key_server_private_path}' >> /root/.ssh/config",
+      "chmod 600 /root/.ssh/config",
+      "chmod +x /tmp/${local.init_script}",
 
-#       # Run the setup script
-#       "sudo sh /tmp/${local.init_script}",
-#       "echo 'Execution completed!'"
-#     ]
-#   }
-# }
+      # Run the setup script
+      "sudo sh /tmp/${local.init_script} > /tmp/${each.value.instance_name}.log 2>&1",
+      "echo 'Execution completed!'"
+    ]
+  }
+
+  # Download log file back to local for debugging
+  provisioner "local-exec" {
+    command = <<-EOT
+      mkdir -p ${path.module}/logs
+      scp -i ${local.cvm_key_filename} \
+          -o StrictHostKeyChecking=no \
+          ${var.cvm_login_user}@${each.value.public_ip}:/tmp/${each.value.instance_name}.log \
+          ${path.module}/logs/${each.value.instance_name}.log
+    EOT
+  }
+}
