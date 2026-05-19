@@ -50,33 +50,6 @@ terraform apply -target=module.k8s-cvm -var-file="./dev.tfvars"
 terraform destroy -target=module.k8s-cvm -var-file="./dev.tfvars"
 ```
 
-If you need to modify instance login password, check vars file `dev.tfvars`
-
-### K3s Install
-**If you just want a quick and simple k8s environment, can execute below module**
-
-It will only create 1 cvm and install k3s
-``` bash
-terraform plan -target=module.k3s-cvm -var-file="./dev.tfvars"
-terraform apply -target=module.k3s-cvm -var-file="./dev.tfvars"
-
-# To destroy
-terraform destroy -target=module.k3s-cvm -var-file="./dev.tfvars"
-```
-
-Here is difference between k8s and k3s
-|       | Kubernetes (K8s)       | K3s       |
-|-----------|-----------|-----------|
-| Design    | Full-featured enterprise-grade   | Lightweight, edge and IoT-focused    |
-| Resources | High resource demands    | Optimized for low-resource environments    |
-| Components      | Multi-component, uses etcd    | Single binary, SQLite default (etcd optional)    |
-| Installation    | Complex setup    | Simple, single-binary installation    |
-| Use cases       | Large-scale production    | Edge, IoT, local dev, and small clusters    |
-| Security        | Advanced, multi-tenant    | Basic, single-tenant; manual hardening needed    |
-| Performance     | High scalability for extensive workloads    | Efficient in limited environments, faster setup    |
-| Community support    | Strong, with a vast community and tooling    | Growing community, more limited tooling    |
-
-
 5. SSH to server to perform health check
 ```bash
 ssh USERNAME@YOURIP
