@@ -110,13 +110,14 @@ resource "tencentcloud_security_group_lite_rule" "default" {
   security_group_id = tencentcloud_security_group.default.id
   ingress = [
     "ACCEPT#0.0.0.0/0#22#TCP",
-    "ACCEPT#172.0.0.0/0#ALL#ALL", # For HongKong AZ inbound / outbound
+    "ACCEPT#172.16.0.0/12#10250#TCP", # For HongKong AZ inbound / outbound
+    "ACCEPT#172.16.0.0/12#ALL#ALL",
     "ACCEPT#0.0.0.0/0#6443#TCP",
   ]
 
   egress = [
     "ACCEPT#0.0.0.0/0#ALL#ALL",
-    "ACCEPT#172.0.0.0/0#ALL#ALL",
+    "ACCEPT#172.16.0.0/12#ALL#ALL",
   ]
 }
 

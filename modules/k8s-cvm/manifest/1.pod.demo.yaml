@@ -1,0 +1,20 @@
+# Execute command: 
+# kubectl apply -f 1.pod.demo.yaml
+# HC: kubectl get pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-demo
+  namespace: default
+  labels:
+    app: myapp
+spec:
+  containers:
+    - name: myapp-1
+      image: wangyanglinux/myapp:v1.0
+    - name: busybox-1
+      image: wangyanglinux/tools:busybox
+      command:
+        - "/bin/sh"
+        - "-c"
+        - "sleep 3600"
