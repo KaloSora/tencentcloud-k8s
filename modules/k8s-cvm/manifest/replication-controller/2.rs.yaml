@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: rs-me-in-demo
+spec:
+  replicas: 3
+  selector:
+    matchExpressions:
+    - key: app
+      operator: In
+      values:
+      - spring-k8s
+      - hahah  
+  template:
+    metadata:
+      labels:
+        app: hahah
+    spec:
+      containers:
+      - name: rc-me-in-demo-container
+        image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/wangyanglinux/myapp:v1.0
+        ports:
+        - containerPort: 80

@@ -1,0 +1,52 @@
+# To create service, use command: 
+# kubectl create svc clusterip myservice --tcp=80:80
+# kubectl create svc clusterip mydb --tcp=80:80
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-pod
+  labels:
+    app: lifecycle-pod
+spec:
+  containers:
+    - name: lifecycle-container
+      image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:busybox
+      command: ["/bin/sh","-c","touch /tmp/live; sleep 600;rm -rf /tmp/live;sleep 3600"]
+      livenessProbe:
+        exec:
+          command: ["test","-e","/tmp/live"]
+        initialDelaySeconds: 1
+        periodSeconds: 3
+      lifecycle:
+        postStart:
+          httpGet:
+            host: 192.168.66.12 # Your serivce IP
+            path: index.html
+            port: 1234
+        preStop:
+          httpGet:
+            host: 192.168.66.12
+            path: index.html
+            port: 1234
+    - name: myapp-container
+      image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/wangyanglinux/myapp:v1.0
+      livenessProbe:
+        httpGet:
+          port: 80
+          path: /index.html
+        initialDelaySeconds: 1
+        periodSeconds: 3
+        timeoutSeconds: 3
+      readinessProbe:
+        httpGet:
+          port: 80
+          path: /index1.html
+        initialDelaySeconds: 1
+        periodSeconds: 3
+  initContainers:
+    - name: init-myservice
+      image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:busybox
+      command: ["sh","-c","until nslookup myservice;do echo waiting for myservice;sleep 2;done;"]
+    - name: init-mydb48
+      image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:busybox
+      command: ["sh","-c","until nslookup mydb;do echo waiting for mydb; sleep 2;done;"]

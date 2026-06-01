@@ -1,0 +1,24 @@
+# Create my 1st ReplicationController
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: rc-demo
+spec:
+  replicas: 3
+  selector:
+    app: rc-demo
+  template:
+    metadata:
+      labels:
+        app: rc-demo
+    spec:
+      containers:
+      - name: rc-demo-container
+        image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/wangyanglinux/myapp:v1.0
+        env:
+        - name: GET_HOSTS_GROM
+          value: dns
+        - name: zhangsan
+          value: "123"
+        ports:
+        - containerPort: 80
