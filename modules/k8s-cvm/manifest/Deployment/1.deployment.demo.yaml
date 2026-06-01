@@ -1,18 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  labels:
-    app: myapp-deploy
-  name: myapp-deploy
-spec:
-  selector:
+metadata:      
+  labels:      
+    app: deployment-demo
+  name: deployment-demo
+spec:          
+  replicas: 5  
+  selector:    
     matchLabels:
-      app: myapp-deploy
-  template:
-    metadata:
-      labels:
-        app: myapp-deploy
-    spec:
+      app: deployment-demo                                                                                                                              
+  template:    
+    metadata:  
+      labels:  
+        app: deployment-demo
+    spec:      
       containers:
-      - name: myapp
-        image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:myappv1.0
+      - image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:myappv1.0
+        name: deployment-demo-container

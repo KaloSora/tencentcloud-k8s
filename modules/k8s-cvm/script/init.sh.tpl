@@ -52,6 +52,7 @@ setup_k8s() {
     echo "=== Start to Install K8s ==="
 
     K8S_VERSION="1.28.8"
+    K8S_CIDR="192.168.0.0/16"
 
     # 1. Install docker engine
     dnf install -y yum-utils
