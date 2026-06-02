@@ -1,0 +1,13 @@
+apiVersion: batch/v1                                                               
+kind: Job                                                                          
+metadata:                                                                          
+  name: job-demo                                                                   
+spec:                                                                              
+  template:                                                                        
+    metadata:                                                                      
+      name: job-demo-pod                                                           
+    spec:                                                                          
+      containers:                                                                  
+      - name: job-demo-container                                                   
+        image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:maqingpythonv1                                                                           
+      restartPolicy: Never  

@@ -1,0 +1,15 @@
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rand
+spec:    
+  template:
+    metadata:
+      name: rand
+    spec:
+      containers:
+      - name: rand
+        image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:randexitv1
+        args: ["--exitcode=1"]                                                                                                                                
+      restartPolicy: Never

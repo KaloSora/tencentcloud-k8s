@@ -1,0 +1,18 @@
+apiVersion: apps/v1                                                           
+kind: DaemonSet                                                               
+metadata:                                                                     
+  name: daemonset-demo                                                        
+  labels:                                                                     
+    app: daemonset-demo                                                       
+spec:                                                                         
+  selector:                                                                   
+    matchLabels:                                                              
+      name: daemonset-demo                                                    
+  template:                                                                   
+    metadata:                                                                 
+      labels:                                                                 
+        name: daemonset-demo                                                  
+    spec:                                                                     
+      containers:                                                             
+      - name: daemonset-demo-container                                        
+        image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:myappv1.0 
