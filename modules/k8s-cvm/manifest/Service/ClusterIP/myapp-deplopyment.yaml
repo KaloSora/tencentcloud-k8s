@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-clusterip-deploy
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+      release: stabel
+      svc: clusterip
+  template:
+    metadata:
+      labels:
+        app: myapp
+        release: stabel
+        env: test
+        svc: clusterip
+    spec:
+      containers:
+      - name: myapp-container
+        image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:myappv1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 80
+        readinessProbe:
+          httpGet:
+            port: 80
+            path: /index1.html
+          initialDelaySeconds: 1
+          periodSeconds: 3

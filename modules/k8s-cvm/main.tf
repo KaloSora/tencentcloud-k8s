@@ -113,11 +113,15 @@ resource "tencentcloud_security_group_lite_rule" "default" {
     "ACCEPT#172.16.0.0/12#10250#TCP", # For HongKong AZ inbound / outbound
     "ACCEPT#172.16.0.0/12#ALL#ALL",
     "ACCEPT#0.0.0.0/0#6443#TCP",
+    "ACCEPT#192.168.0.0/16#ALL#ALL", # Allow K8s cluster internal communication within private network
+    "ACCEPT#10.96.0.0/12#ALL#ALL"  # Allow K8s cluster service CIDR
   ]
 
   egress = [
     "ACCEPT#0.0.0.0/0#ALL#ALL",
     "ACCEPT#172.16.0.0/12#ALL#ALL",
+    "ACCEPT#192.168.0.0/16#ALL#ALL",
+    "ACCEPT#10.96.0.0/12#ALL#ALL"  # Allow K8s cluster service CIDR
   ]
 }
 
