@@ -30,7 +30,33 @@ init() {
     # Set timezone
     timedatectl set-timezone Asia/Shanghai
 
-    # Load kernel modules
+    # Enable ipvs
+    echo ">>> Enable IPVS modules"
+    # Install ipset and ipvsadm
+    dnf install -y ipset ipvsadm
+    # Load kernel modules for IPVS
+    cat <<EOF | tee /etc/modules-load.d/ipvs.conf
+ip_vs
+ip_vs_rr
+ip_vs_wrr
+ip_vs_sh
+nf_conntrack
+EOF
+    modprobe ip_vs
+    modprobe ip_vs_rr
+    modprobe ip_vs_wrr
+    modprobe ip_vs_sh
+    modprobe nf_conntrack
+    
+    # sysctl tuning for IPVS
+    cat <<EOF | tee /etc/sysctl.d/99-ipvs.conf
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.conf.all.forwarding = 1
+EOF
+    sysctl --system
+
+    # Load kernel modules (overlay, br_netfilter)
     cat <<EOF | tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
@@ -38,7 +64,7 @@ EOF
     modprobe overlay
     modprobe br_netfilter
 
-    # Configure sysctl
+    # Configure sysctl for Kubernetes
     cat <<EOF | tee /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-iptables  = 1
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -52,6 +78,7 @@ setup_k8s() {
     echo "=== Start to Install K8s ==="
 
     K8S_VERSION="1.28.8"
+    K8S_CIDR="192.168.0.0/16"
 
     # 1. Install docker engine
     dnf install -y yum-utils
@@ -144,6 +171,7 @@ EOF
     ROLE=${instance_role}
     MASTER_IP=${instance_master_ip}
     JOIN_CMD_FILE="/root/join_command.sh"
+    LOCAL_IP=$(hostname -I | awk '{print $1}')
 
     if [[ "$ROLE" == "master" ]]; then
         echo ">>> Start to configure Kubernetes Master node"
@@ -154,12 +182,29 @@ EOF
             --kubernetes-version=v$K8S_VERSION \
             --cri-socket=unix:///var/run/cri-dockerd.sock
 
-        kubeadm init \
-            --image-repository=registry.aliyuncs.com/google_containers \
-            --pod-network-cidr=192.168.0.0/16 \
-            --apiserver-advertise-address=$(hostname -I | awk '{print $1}') \
-            --kubernetes-version=v$K8S_VERSION \
-            --cri-socket=unix:///var/run/cri-dockerd.sock
+        # Generate kubeadm configuration file with IPVS mode for kube-proxy
+        cat <<EOF > /root/kubeadm-config.yaml
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: $LOCAL_IP
+nodeRegistration:
+  criSocket: unix:///var/run/cri-dockerd.sock
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+kubernetesVersion: v$K8S_VERSION
+imageRepository: registry.aliyuncs.com/google_containers
+networking:
+  podSubnet: $K8S_CIDR
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: "ipvs"
+EOF
+
+        # Initialize cluster with IPVS-enabled kube-proxy
+        kubeadm init --config=/root/kubeadm-config.yaml
 
         mkdir -p $HOME/.kube
         cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
@@ -180,7 +225,7 @@ spec:
     ipPools:
     - blockSize: 26
       cidr: 192.168.0.0/16
-      encapsulation: VXLANCrossSubnet
+      encapsulation: VXLAN
       natOutgoing: Enabled
       nodeSelector: all()
 EOF
@@ -191,6 +236,8 @@ EOF
         echo ""
         echo "=== Cluster Health Summary ==="
         kubectl get node -o wide 2>/dev/null || echo "Unable to get nodes (kubectl not ready yet)"
+        echo "=== Verify kube-proxy mode (should be ipvs) ==="
+        kubectl get configmap -n kube-system kube-proxy -o jsonpath='{.data.config\.conf}' | grep mode || echo "Check manually"
 
     elif [[ "$ROLE" == "node" ]]; then
         echo ">>> Start to configure Kubernetes Node node"

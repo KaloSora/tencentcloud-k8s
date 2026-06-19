@@ -114,13 +114,15 @@ resource "tencentcloud_security_group_lite_rule" "default" {
     "ACCEPT#172.16.0.0/12#ALL#ALL",
     "ACCEPT#0.0.0.0/0#6443#TCP",
     "ACCEPT#192.168.0.0/16#ALL#ALL", # Allow K8s cluster internal communication within private network
-    "ACCEPT#10.96.0.0/12#ALL#ALL"  # Allow K8s cluster service CIDR
+    "ACCEPT#10.96.0.0/12#ALL#ALL",  # Allow K8s cluster service CIDR
+    "ACCEPT#0.0.0.0/0#4789#UDP" # Allow VXLAN overlay network traffic for CNI plugin Calico/Flannel
   ]
 
   egress = [
     "ACCEPT#0.0.0.0/0#ALL#ALL",
     "ACCEPT#172.16.0.0/12#ALL#ALL",
     "ACCEPT#192.168.0.0/16#ALL#ALL",
+    "ACCEPT#0.0.0.0/0#4789#UDP", # Allow VXLAN overlay network traffic for CNI plugin Calico/Flannel
     "ACCEPT#10.96.0.0/12#ALL#ALL"  # Allow K8s cluster service CIDR
   ]
 }
