@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-nodeport-deploy
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+      release: stabel
+      svc: nodeport
+  template:
+    metadata:
+      labels:
+        app: myapp
+        release: stabel
+        env: test
+        svc: nodeport
+    spec:
+      containers:
+      - name: myapp-container
+        image: wangyanglinux/myapp:v1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 80

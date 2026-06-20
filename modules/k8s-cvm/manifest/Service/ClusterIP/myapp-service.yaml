@@ -10,6 +10,10 @@ spec:
     app: myapp
     release: stabel
     svc: clusterip
+  sessionAffinity: ClientIP # Enable session affinity based on client IP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600 # Default session affinity timeout (10800 seconds)
   ports:   
   - name: http
     port: 80
