@@ -1,0 +1,54 @@
+apiVersion: v1 
+kind: Pod      
+metadata:      
+  name: downward-api-volune-example
+spec:          
+  containers:  
+    - name: my-container
+      image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:myappv1.0
+      resources:
+        limits:
+          cpu: "1"
+          memory: "512Mi"
+        requests:
+          cpu: "0.5"
+          memory: "256Mi"
+      volumeMounts:
+        - name: downward-api-volume
+          mountPath: /etc/podinfo
+  volumes:     
+    - name: downward-api-volume
+      downwardAPI:
+        items: 
+          - path: "annotations"
+            fieldRef:
+              fieldPath: metadata.annotations
+          - path: "labels"
+            fieldRef:
+              fieldPath: metadata.labels
+          - path: "name"
+            fieldRef:
+              fieldPath: metadata.name
+          - path: "namespace"
+            fieldRef:
+              fieldPath: metadata.namespace
+          - path: "uid"
+            fieldRef:
+              fieldPath: metadata.uid
+          - path: "cpuRequest"
+            resourceFieldRef:
+              containerName: my-container
+              resource: requests.cpu
+          - path: "memoryRequest"
+            resourceFieldRef:
+              containerName: my-container
+              resource: requests.memory
+          - path: "cpuLimit"
+            resourceFieldRef:
+              containerName: my-container
+              resource: limits.cpu
+          - path: "memoryLimit"
+            resourceFieldRef:
+              containerName: my-container
+              resource: limits.memory                                                                
+  restartPolicy: Never

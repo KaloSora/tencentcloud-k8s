@@ -1,0 +1,22 @@
+apiVersion: v1      
+kind: Pod           
+metadata:           
+  name: volume-emptydir-disk-pod
+spec:               
+  containers:       
+    - name: myapp   
+      image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:myappv1.0
+      ports:        
+        - containerPort: 80
+      volumeMounts: 
+        - name: logs-volume                                                                                                                                
+          mountPath: /usr/local/nginx/logs
+    - name: busybox 
+      image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:busybox
+      command: ["/bin/sh","-c","touch /logs/access.log && tail -f /logs/access.log"]
+      volumeMounts: 
+        - name: logs-volume
+          mountPath: /logs
+  volumes:          
+    - name: logs-volume
+      emptyDir: {}  

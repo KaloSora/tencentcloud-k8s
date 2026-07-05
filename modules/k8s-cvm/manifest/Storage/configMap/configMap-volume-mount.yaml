@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: literal-config
+  namespace: default
+data:
+  name: dave
+  password: pass
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cm-volume-pod
+spec:
+  containers:
+  - name: myapp-container
+    image: wangyanglinux/myapp:v1.0
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/config # The configMap will be created on this path in the container, it's a soft link to the configMap data.
+  volumes:
+  - name: config-volume
+    configMap:
+      name: literal-config
+  restartPolicy: Never
