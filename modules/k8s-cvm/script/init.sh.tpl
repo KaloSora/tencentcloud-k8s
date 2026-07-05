@@ -30,6 +30,9 @@ init() {
     # Set timezone
     timedatectl set-timezone Asia/Shanghai
 
+    # Install nfs
+    yum -y install nfs-utils rpcbind
+
     # Enable ipvs
     echo ">>> Enable IPVS modules"
     # Install ipset and ipvsadm
