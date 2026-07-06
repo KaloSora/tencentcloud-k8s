@@ -21,6 +21,16 @@ variable "region" {
   default = "ap-hongkong"
 }
 
+variable "vpc_id" {
+  type = string
+  description = "VPC id on tencent cloud"
+}
+
+variable "subnet_id" {
+  type = string
+  description = "subnet id on tencent cloud"
+}
+
 variable "cvm_availability_zone" {
   type = string
   description = "tencent cvm availability zone"
@@ -45,4 +55,10 @@ variable "cvm_login_user" {
 
 variable "k8s_cluster" {
   description = "K8s cluster object"
+}
+
+### Cloud File Storage config
+variable "cfs_enabled" {
+  type = bool
+  description = "Whether to enable cfs"
 }

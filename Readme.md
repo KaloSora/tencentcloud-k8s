@@ -56,3 +56,10 @@ ssh USERNAME@YOURIP
 
 kubectl get ns
 ```
+
+# Terraform Runbook
+| Step     | Command | Description  |
+| :------- | :---: | ----: |
+| 1     | terraform init -backend-config="YOUR_BUCKET" | To deploy K8s on Tencent cloud CVM  |
+| 2     | terraform apply -target=module.k8s-cvm -var-file="dev.tfvars"   | To deploy K8s on Tencent cloud CVM  |
+| 3     | terraform apply -target=module.k8s-cfs -var-file="dev.tfvars"   | To create NFS on Tencent cloud      |

@@ -1,4 +1,6 @@
 region = "ap-hongkong"
+vpc_id = "vpc-d7o9iy4y"
+subnet_id = "subnet-adxnlxc5"
 
 # CVM variables
 cvm_availability_zone = "ap-hongkong-2"
@@ -18,3 +20,6 @@ k8s_cluster = {
   #   instance_name = "k8s-node-2", cpu_core_count = 4, memory_size = 8
   # }
 } 
+
+### Cloud file system variables
+cfs_enabled = true
