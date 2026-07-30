@@ -62,3 +62,13 @@ variable "cfs_enabled" {
   type = bool
   description = "Whether to enable cfs"
 }
+
+variable "cfs_allow_cidr" {
+  type = string
+  description = "CFS allowed CIDR block"
+}
+
+variable "cfs_mount_point" {
+  type = string
+  description = "CFS mount point"
+}

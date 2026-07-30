@@ -30,8 +30,14 @@ init() {
     # Set timezone
     timedatectl set-timezone Asia/Shanghai
 
-    # Install nfs
+    # Install nfs & mount cfs
     yum -y install nfs-utils rpcbind
+    if [ "${cfs_enabled}" == "true" ]; then
+        mkdir -p ${cfs_mount_point}
+        mount -t nfs -o nolock ${cfs_ip}:/ ${cfs_mount_point}
+    fi
+
+    yum -y install telnet
 
     # Enable ipvs
     echo ">>> Enable IPVS modules"

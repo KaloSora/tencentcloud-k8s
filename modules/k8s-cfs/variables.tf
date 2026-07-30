@@ -18,3 +18,8 @@ variable "cfs_enabled" {
   description = "Whether to enable CFS for the K8s cluster"
   default = false
 }
+
+variable "cfs_cidr" {
+  description = "CFS CIDR block"
+  type        = string
+}

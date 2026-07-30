@@ -4,6 +4,16 @@ resource "tencentcloud_cfs_access_group" "k8s_cfs_ag" {
   description = "Allow K8s cluster nodes to access"
 }
 
+# CFS Access rules for each CVM private IP
+resource "tencentcloud_cfs_access_rule" "k8s_cfs_rule" {
+
+  access_group_id = tencentcloud_cfs_access_group.k8s_cfs_ag.id
+  auth_client_ip  = var.cfs_cidr
+  priority        = 1
+  rw_permission   = "RW"
+  user_permission = "all_squash"
+}
+
 # Create standard CFS file system
 resource "tencentcloud_cfs_file_system" "k8s_cfs" {
   count = var.cfs_enabled ? 1 : 0

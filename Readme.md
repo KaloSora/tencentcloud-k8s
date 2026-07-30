@@ -61,5 +61,5 @@ kubectl get ns
 | Step     | Command | Description  |
 | :------- | :---: | ----: |
 | 1     | terraform init -backend-config="YOUR_BUCKET" | To deploy K8s on Tencent cloud CVM  |
-| 2     | terraform apply -target=module.k8s-cvm -var-file="dev.tfvars"   | To deploy K8s on Tencent cloud CVM  |
-| 3     | terraform apply -target=module.k8s-cfs -var-file="dev.tfvars"   | To create NFS on Tencent cloud      |
+| 2     | terraform apply -target=module.k8s-cfs -var-file="dev.tfvars"   | To create NFS on Tencent cloud (Set the enable flag to true if require on "dev.tfvars")      |
+| 3     | terraform apply -target=module.k8s-cvm -var-file="dev.tfvars"   | To deploy K8s on Tencent cloud CVM  |

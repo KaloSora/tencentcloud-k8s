@@ -27,3 +27,21 @@ variable "cvm_login_user" {
 variable "k8s_cluster" {
   description = "K8s cluster object"
 }
+
+variable "cvm_cfs_enabled" {
+  type = bool
+  description = "K8s cfs enabled flag"
+  default = false
+}
+
+variable "cvm_cfs_ip" {
+  type = string
+  description = "K8s cfs mount ip"
+  default = ""
+}
+
+variable "cvm_cfs_mount_point" {
+  type = string
+  description = "K8s cfs mount point"
+  default = ""
+}

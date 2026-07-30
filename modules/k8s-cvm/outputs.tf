@@ -8,6 +8,11 @@ output "instance_id" {
   value       = tencentcloud_instance.k8s_server[0].id
 }
 
+output "private_ips" {
+  description = "CVM private ip addresses"
+  value = [for instance in tencentcloud_instance.k8s_server : instance.private_ip]
+}
+
 # output "password" {
 #   description = "vm password"
 #   value       = var.password

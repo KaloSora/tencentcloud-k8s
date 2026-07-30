@@ -171,6 +171,9 @@ resource "null_resource" "master_provision" {
         "instance_name" = "${each.value.instance_name}"
         "instance_master_ip" = "${each.value.private_ip}"
         "ssh_key_path" = "${local.cvm_key_server_private_path}"
+        "cfs_enabled" = "${var.cvm_cfs_enabled}"
+        "cfs_ip" = "${var.cvm_cfs_ip}"
+        "cfs_mount_point" = "${var.cvm_cfs_mount_point}"
       }
     )
   }
@@ -247,6 +250,9 @@ resource "null_resource" "node_provision" {
         "instance_name" = "${each.value.instance_name}"
         "instance_master_ip" = "${local.master_private_ip}"
         "ssh_key_path" = "${local.cvm_key_server_private_path}"
+        "cfs_enabled" = "${var.cvm_cfs_enabled}"
+        "cfs_ip" = "${var.cvm_cfs_ip}"
+        "cfs_mount_point" = "${var.cvm_cfs_mount_point}"
       }
     )
   }
