@@ -32,12 +32,17 @@ init() {
 
     # Install nfs & mount cfs
     yum -y install nfs-utils rpcbind
-    if [ "${cfs_enabled}" == "true" ]; then
-        mkdir -p ${cfs_mount_point}
-        mount -t nfs -o nolock ${cfs_ip}:/ ${cfs_mount_point}
-    fi
+
+    # Remove: No need to mount Cloud NFS to K8s directly
+    # Use CSI to connect Cloud NFS in K8s instead
+    # if [ "${cfs_enabled}" == "true" ]; then
+    #     mkdir -p ${cfs_mount_point}
+    #     mount -t nfs -o nolock ${cfs_ip}:/ ${cfs_mount_point}
+    # fi
 
     yum -y install telnet
+
+    yum -y install git
 
     # Enable ipvs
     echo ">>> Enable IPVS modules"
@@ -247,6 +252,42 @@ EOF
         kubectl get node -o wide 2>/dev/null || echo "Unable to get nodes (kubectl not ready yet)"
         echo "=== Verify kube-proxy mode (should be ipvs) ==="
         kubectl get configmap -n kube-system kube-proxy -o jsonpath='{.data.config\.conf}' | grep mode || echo "Check manually"
+
+        # Master: Install CSI driver
+        if [ "${cfs_enabled}" == "true" ]; then
+
+            if [ -n "${cfs_secret_id}" ] && [ -n "${cfs_secret_key}" ]; then
+                echo ">>> Creating CFS CSI Secret in kube-system namespace"
+                kubectl create secret generic ${cfs_csi_secret} \
+                    -n kube-system \
+                    --from-literal=SecretId="${cfs_secret_id}" \
+                    --from-literal=SecretKey="${cfs_secret_key}" \
+                    --dry-run=client -o yaml | kubectl apply -f -
+            else
+                echo "Warning: CFS_SECRET_ID or CFS_SECRET_KEY not set. CSI may fail to authenticate."
+            fi
+
+            git clone https://github.com/TencentCloud/kubernetes-csi-tencentcloud.git
+            cd kubernetes-csi-tencentcloud/deploy/cfs/kubernetes/
+            kubectl apply -f csi-cfs-rbac.yaml
+            kubectl apply -f csi-cfs-csidriver-new.yaml
+            kubectl apply -f csi-provisioner-cfsplugin-new.yaml
+            kubectl apply -f csi-nodeplugin-cfsplugin-new.yaml
+
+            echo ">>> Waiting for CFS CSI provisioner to be ready (timeout 120s)..."
+            kubectl wait --for=condition=ready pod -l app=csi-provisioner-cfsplugin -n kube-system --timeout=120s || {
+                echo "WARNING: CFS CSI provisioner did not become ready within 120s. Continuing anyway..."
+                
+                kubectl get pods -n kube-system | grep cfsplugin || true
+            }
+        
+            # Health check CSIDriver
+            if kubectl get csidriver | grep -q "com.tencent.cloud.csi.cfs"; then
+                echo ">>> CSIDriver registered successfully."
+            else
+                echo "WARNING: CSIDriver registration failed."
+            fi
+        fi
 
     elif [[ "$ROLE" == "node" ]]; then
         echo ">>> Start to configure Kubernetes Node node"

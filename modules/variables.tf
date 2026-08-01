@@ -1,13 +1,13 @@
 variable "secret_id" {
   type = string
   description = "tencent cloud access id"
-  default = "Your Access ID"
+  default = ""
 }
 
 variable "secret_key" {
   type = string
   description = "tencent cloud access key"
-  default = "Your Access Key"
+  default = ""
 }
 
 # variable "password" {
@@ -71,4 +71,9 @@ variable "cfs_allow_cidr" {
 variable "cfs_mount_point" {
   type = string
   description = "CFS mount point"
+}
+
+variable "cfs_csi_secret" {
+  type = string
+  description = "CFS CSI secret"
 }

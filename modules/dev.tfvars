@@ -25,3 +25,4 @@ k8s_cluster = {
 cfs_allow_cidr = "172.0.0.0/8"
 cfs_mount_point = "/opt/cfs_data/"
 cfs_enabled = true  # Set to true to enable CFS integration
+cfs_csi_secret = "cfs-csi-secret"

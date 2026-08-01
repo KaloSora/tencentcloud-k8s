@@ -45,3 +45,20 @@ variable "cvm_cfs_mount_point" {
   description = "K8s cfs mount point"
   default = ""
 }
+
+variable "cvm_cfs_secret_id" {
+  type = string
+  description = "tencent cloud cfs access id"
+  default = ""
+}
+
+variable "cvm_cfs_secret_key" {
+  type = string
+  description = "tencent cloud cfs access key"
+  default = ""
+}
+
+variable "cvm_cfs_csi_secret" {
+  type = string
+  description = "K8s cfs csi secret"
+}

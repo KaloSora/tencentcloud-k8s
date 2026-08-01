@@ -174,6 +174,9 @@ resource "null_resource" "master_provision" {
         "cfs_enabled" = "${var.cvm_cfs_enabled}"
         "cfs_ip" = "${var.cvm_cfs_ip}"
         "cfs_mount_point" = "${var.cvm_cfs_mount_point}"
+        "cfs_secret_id" = "${var.cvm_cfs_secret_id}"
+        "cfs_secret_key" = "${var.cvm_cfs_secret_key}"
+        "cfs_csi_secret" = "${var.cvm_cfs_csi_secret}"
       }
     )
   }
@@ -253,6 +256,9 @@ resource "null_resource" "node_provision" {
         "cfs_enabled" = "${var.cvm_cfs_enabled}"
         "cfs_ip" = "${var.cvm_cfs_ip}"
         "cfs_mount_point" = "${var.cvm_cfs_mount_point}"
+        "cfs_secret_id" = "${var.cvm_cfs_secret_id}"
+        "cfs_secret_key" = "${var.cvm_cfs_secret_key}"
+        "cfs_csi_secret" = "${var.cvm_cfs_csi_secret}"
       }
     )
   }
