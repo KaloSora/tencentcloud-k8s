@@ -34,17 +34,17 @@ variable "cvm_cfs_enabled" {
   default = false
 }
 
-variable "cvm_cfs_ip" {
-  type = string
-  description = "K8s cfs mount ip"
-  default = ""
-}
+# variable "cvm_cfs_ip" {
+#   type = string
+#   description = "K8s cfs mount ip"
+#   default = ""
+# }
 
-variable "cvm_cfs_mount_point" {
-  type = string
-  description = "K8s cfs mount point"
-  default = ""
-}
+# variable "cvm_cfs_mount_point" {
+#   type = string
+#   description = "K8s cfs mount point"
+#   default = ""
+# }
 
 variable "cvm_cfs_secret_id" {
   type = string

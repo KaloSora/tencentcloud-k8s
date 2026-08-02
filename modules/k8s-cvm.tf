@@ -6,8 +6,6 @@ module "k8s-cvm" {
   cvm_os_regex = var.cvm_os_regex
   k8s_cluster = var.k8s_cluster
   cvm_cfs_enabled = var.cfs_enabled
-  cvm_cfs_ip = module.k8s-cfs.cfs_mount_ip
-  cvm_cfs_mount_point = var.cfs_mount_point
   cvm_cfs_secret_id = var.secret_id
   cvm_cfs_secret_key = var.secret_key
   cvm_cfs_csi_secret = var.cfs_csi_secret

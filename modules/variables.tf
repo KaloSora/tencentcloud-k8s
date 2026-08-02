@@ -68,10 +68,10 @@ variable "cfs_allow_cidr" {
   description = "CFS allowed CIDR block"
 }
 
-variable "cfs_mount_point" {
-  type = string
-  description = "CFS mount point"
-}
+# variable "cfs_mount_point" {
+#   type = string
+#   description = "CFS mount point"
+# }
 
 variable "cfs_csi_secret" {
   type = string

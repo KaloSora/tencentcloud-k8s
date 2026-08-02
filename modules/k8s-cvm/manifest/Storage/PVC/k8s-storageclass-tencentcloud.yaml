@@ -1,0 +1,20 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: cfs-shared-storageclass
+provisioner: com.tencent.cloud.csi.cfs
+reclaimPolicy: Delete # Retain / Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - vers=3
+  - nolock
+  - proto=tcp
+  - noresvport
+parameters:
+  # Network configuration for CFS
+  vpcId: vpc-d7o9iy4y
+  subnetId: subnet-adxnlxc5
+
+  # Storage type：SD/ HP
+  storageType: SD
+  pgroupid: pgroup-f0i66gb5

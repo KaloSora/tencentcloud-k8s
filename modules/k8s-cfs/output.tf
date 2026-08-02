@@ -1,7 +1,7 @@
-output "cfs_mount_ip" {
-  value = var.cfs_enabled ? tencentcloud_cfs_file_system.k8s_cfs[0].mount_ip : ""
-}
+# output "cfs_mount_ip" {
+#   value = var.cfs_enabled ? tencentcloud_cfs_file_system.k8s_cfs[0].mount_ip : ""
+# }
 
-output "cfs_file_system_id" {
-  value = var.cfs_enabled ? tencentcloud_cfs_file_system.k8s_cfs[0].id : ""
-}
+# output "cfs_file_system_id" {
+#   value = var.cfs_enabled ? tencentcloud_cfs_file_system.k8s_cfs[0].id : ""
+# }

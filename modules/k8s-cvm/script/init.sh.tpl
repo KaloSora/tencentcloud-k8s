@@ -33,13 +33,6 @@ init() {
     # Install nfs & mount cfs
     yum -y install nfs-utils rpcbind
 
-    # Remove: No need to mount Cloud NFS to K8s directly
-    # Use CSI to connect Cloud NFS in K8s instead
-    # if [ "${cfs_enabled}" == "true" ]; then
-    #     mkdir -p ${cfs_mount_point}
-    #     mount -t nfs -o nolock ${cfs_ip}:/ ${cfs_mount_point}
-    # fi
-
     yum -y install telnet
 
     yum -y install git
@@ -260,8 +253,8 @@ EOF
                 echo ">>> Creating CFS CSI Secret in kube-system namespace"
                 kubectl create secret generic ${cfs_csi_secret} \
                     -n kube-system \
-                    --from-literal=SecretId="${cfs_secret_id}" \
-                    --from-literal=SecretKey="${cfs_secret_key}" \
+                    --from-literal=TENCENTCLOUD_CFS_API_SECRET_ID="${cfs_secret_id}" \
+                    --from-literal=TENCENTCLOUD_CFS_API_SECRET_KEY="${cfs_secret_key}" \
                     --dry-run=client -o yaml | kubectl apply -f -
             else
                 echo "Warning: CFS_SECRET_ID or CFS_SECRET_KEY not set. CSI may fail to authenticate."
@@ -277,6 +270,7 @@ EOF
             echo ">>> Waiting for CFS CSI provisioner to be ready (timeout 120s)..."
             kubectl wait --for=condition=ready pod -l app=csi-provisioner-cfsplugin -n kube-system --timeout=120s || {
                 echo "WARNING: CFS CSI provisioner did not become ready within 120s. Continuing anyway..."
+                echo "CFS CSI provisioner health check: kubectl get pods -n kube-system | grep cfsplugin"
                 
                 kubectl get pods -n kube-system | grep cfsplugin || true
             }
@@ -319,12 +313,22 @@ output() {
     echo "Execute cmd to connect server: ssh -i k8s-cvm/ssh_key/cvm_key.pem root@${instance_ip}"
 }
 
+k8s_auto_completion() {
+    # Enable kubectl auto-completion
+    yum -y install bash-completion
+    echo "source <(kubectl completion bash)" >> ~/.bashrc
+    source ~/.bashrc
+}
+
 main() {
     echo "Init Rocky Linux setting ..."
     init
 
     echo "Setup K8s ..."
     setup_k8s
+
+    echo "Enable kubectl auto-completion ..."
+    k8s_auto_completion
 
     output
 }
