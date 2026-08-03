@@ -1,0 +1,20 @@
+apiVersion: apps/v1              
+kind: Deployment                 
+metadata:                        
+  labels:                        
+    app: myapp                   
+  name: myapp                    
+spec:                            
+  replicas: 1                    
+  selector:                      
+    matchLabels:                 
+      app: myapp                 
+  template:                      
+    metadata:                    
+      labels:                    
+        app: myapp               
+    spec:                        
+      containers:                
+        - image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:myappv1.0
+          name: myapp            
+      schedulerName: my-scheduler

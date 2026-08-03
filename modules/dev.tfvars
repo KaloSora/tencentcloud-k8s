@@ -22,7 +22,7 @@ k8s_cluster = {
 } 
 
 ### Cloud file system variables
+cfs_enabled = false  # Set to true to enable CFS integration
 cfs_allow_cidr = "172.0.0.0/8" # CFS access group CIDR
-# cfs_mount_point = "/opt/cfs_data/" # No need to define this variable since the CFS CSI driver will handle the mount point dynamically.
-cfs_enabled = true  # Set to true to enable CFS integration
 cfs_csi_secret = "cfs-csi-api-key" # Fix the value since it's defined in "csi-provisioner-cfsplugin-new.yaml"
+# cfs_mount_point = "/opt/cfs_data/" # No need to define this variable since the CFS CSI driver will handle the mount point dynamically.

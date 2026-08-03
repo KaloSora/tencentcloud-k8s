@@ -196,6 +196,7 @@ kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: $LOCAL_IP
 nodeRegistration:
+  name: ${instance_name}
   criSocket: unix:///var/run/cri-dockerd.sock
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
@@ -246,6 +247,10 @@ EOF
         echo "=== Verify kube-proxy mode (should be ipvs) ==="
         kubectl get configmap -n kube-system kube-proxy -o jsonpath='{.data.config\.conf}' | grep mode || echo "Check manually"
 
+        # Print ~/.kube/config for user reference
+        echo ">>> K8s config file for kubectl access:"
+        cat $HOME/.kube/config
+
         # Master: Install CSI driver
         if [ "${cfs_enabled}" == "true" ]; then
 
@@ -292,8 +297,9 @@ EOF
         fi
 
         if [[ -f "$JOIN_CMD_FILE" ]]; then
-            bash $JOIN_CMD_FILE
-            echo "Node node has joined the cluster"
+            JOIN_CMD=$(cat "$JOIN_CMD_FILE")
+            $JOIN_CMD --node-name ${instance_name}
+            echo "Node node has joined the cluster with name ${instance_name}"
         else
             echo "Error: Join command file $JOIN_CMD_FILE not found, and automatic retrieval failed"
             exit 1

@@ -1,0 +1,20 @@
+apiVersion: v1   
+kind: Pod        
+metadata:        
+  name: node-affinity-preferred
+  labels:        
+    app: node-affinity-preferred
+spec:            
+  containers:    
+    - name: node-affinity-preferred-pod
+      image: registry.cn-hangzhou.aliyuncs.com/wangyangshare/share:myappv1.0
+  affinity:      
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+              - key: domain
+                operator: In                                                                                                                               
+                values:
+                  - xinxianghf
