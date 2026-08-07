@@ -362,7 +362,7 @@ main() {
     fi
 
     if [ "${k8s_helm_enabled}" == "true" ]; then
-        echo "Helm Installation flag is enabled, proceeding with installation..."
+        echo "HELM Installation flag is enabled, proceeding with installation..."
         install_helm
     fi
 
