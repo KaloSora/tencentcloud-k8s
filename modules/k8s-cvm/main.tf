@@ -8,10 +8,11 @@ locals {
   init_script_tpl = "init.sh.tpl"
 
   # Set template file variables for init.sh.tpl
-  init_var_k8s_version = "1.28.8"
-  init_var_k8s_cidr = "192.168.0.0/16"
-  init_var_cfsssl_version = "1.6.5"
-  init_var_cri_dockerd_version = "0.3.15"
+  init_var_k8s_version = var.k8s_version
+  init_var_k8s_cidr = var.k8s_cidr
+  init_var_cfsssl_version = var.k8s_cfssl_version
+  init_var_cri_dockerd_version = var.k8s_cri_dockerd_version
+  init_var_helm_version = var.k8s_helm_version
 
   ### Dynamic variable after cvm creation below ###
   # Filter master instances for master provisioning
@@ -181,10 +182,13 @@ resource "null_resource" "master_provision" {
         "cfs_secret_id" = "${var.cvm_cfs_secret_id}"
         "cfs_secret_key" = "${var.cvm_cfs_secret_key}"
         "cfs_csi_secret" = "${var.cvm_cfs_csi_secret}"
-        "CFSSL_VERSION"  = "${local.init_var_cfsssl_version}"
-        "CRI_DOCKERD_VERSION" = "${local.init_var_cri_dockerd_version}"
-        "K8S_VERSION" = "${local.init_var_k8s_version}"
-        "K8S_CIDR" = "${local.init_var_k8s_cidr}"
+        "k8s_cfssl_version"  = "${local.init_var_cfsssl_version}"
+        "k8s_cri_dockerd_version" = "${local.init_var_cri_dockerd_version}"
+        "k8s_version" = "${local.init_var_k8s_version}"
+        "k8s_cidr" = "${local.init_var_k8s_cidr}"
+        "k8s_cfssl_enabled" = "${var.k8s_cfssl_enabled}"
+        "k8s_helm_enabled" = "${var.k8s_helm_enabled}"
+        "k8s_helm_version" = "${var.k8s_helm_version}"
       }
     )
   }
@@ -265,10 +269,13 @@ resource "null_resource" "node_provision" {
         "cfs_secret_id" = "${var.cvm_cfs_secret_id}"
         "cfs_secret_key" = "${var.cvm_cfs_secret_key}"
         "cfs_csi_secret" = "${var.cvm_cfs_csi_secret}"
-        "CFSSL_VERSION"  = "${local.init_var_cfsssl_version}"
-        "CRI_DOCKERD_VERSION" = "${local.init_var_cri_dockerd_version}"
-        "K8S_VERSION" = "${local.init_var_k8s_version}"
-        "K8S_CIDR" = "${local.init_var_k8s_cidr}"
+        "k8s_cfssl_version"  = "${local.init_var_cfsssl_version}"
+        "k8s_cri_dockerd_version" = "${local.init_var_cri_dockerd_version}"
+        "k8s_version" = "${local.init_var_k8s_version}"
+        "k8s_cidr" = "${local.init_var_k8s_cidr}"
+        "k8s_cfssl_enabled" = "${var.k8s_cfssl_enabled}"
+        "k8s_helm_enabled" = "${var.k8s_helm_enabled}"
+        "k8s_helm_version" = "${var.k8s_helm_version}"
       }
     )
   }

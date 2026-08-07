@@ -83,9 +83,9 @@ EOF
 install_cfssl () {
     echo "Installing CFSSL..."
 
-    curl -sLo cfssl "https://github.com/cloudflare/cfssl/releases/download/v${CFSSL_VERSION}/cfssl_${CFSSL_VERSION}_linux_amd64"
-    curl -sLo cfssljson "https://github.com/cloudflare/cfssl/releases/download/v${CFSSL_VERSION}/cfssljson_${CFSSL_VERSION}_linux_amd64"
-    curl -sLo cfssl-certinfo "https://github.com/cloudflare/cfssl/releases/download/v${CFSSL_VERSION}/cfssl-certinfo_${CFSSL_VERSION}_linux_amd64"
+    curl -sLo cfssl "https://github.com/cloudflare/cfssl/releases/download/v${k8s_cfssl_version}/cfssl_${k8s_cfssl_version}_linux_amd64"
+    curl -sLo cfssljson "https://github.com/cloudflare/cfssl/releases/download/v${k8s_cfssl_version}/cfssljson_${k8s_cfssl_version}_linux_amd64"
+    curl -sLo cfssl-certinfo "https://github.com/cloudflare/cfssl/releases/download/v${k8s_cfssl_version}/cfssl-certinfo_${k8s_cfssl_version}_linux_amd64"
     chmod +x cfssl cfssljson cfssl-certinfo
     sudo mv cfssl cfssljson cfssl-certinfo /usr/local/bin/
 
@@ -95,12 +95,24 @@ install_cfssl () {
     cfssl-certinfo -version 2>/dev/null || echo "cfssl-certinfo installed"
 }
 
+install_helm() {
+    echo "Installing Helm..."
+
+    curl -sLo helm.tar.gz "https://get.helm.sh/helm-v${k8s_helm_version}-linux-amd64.tar.gz"
+    tar -zxvf helm.tar.gz
+    chmod +x linux-amd64/helm
+    sudo mv linux-amd64/helm /usr/local/bin/helm
+
+    echo "Installation completed. Version:"
+    helm version
+}
+
 setup_k8s() {
     set -e
     echo "=== Start to Install K8s ==="
 
-    K8S_VERSION="${K8S_VERSION}"
-    K8S_CIDR="${K8S_CIDR}"
+    K8S_VERSION="${k8s_version}"
+    K8S_CIDR="${k8s_cidr}"
 
     # 1. Install docker engine
     dnf install -y yum-utils
@@ -123,9 +135,8 @@ EOF
     systemctl start docker
 
     # 2. Install cri-dockerd
-    CRI_DOCKERD_VERSION="${CRI_DOCKERD_VERSION}"
-    wget https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
-    tar -xzf cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
+    wget https://github.com/Mirantis/cri-dockerd/releases/download/v${k8s_cri_dockerd_version}/cri-dockerd-${k8s_cri_dockerd_version}.amd64.tgz
+    tar -xzf cri-dockerd-${k8s_cri_dockerd_version}.amd64.tgz
     file cri-dockerd/cri-dockerd
     mv cri-dockerd/cri-dockerd /usr/local/bin/
     chmod +x /usr/local/bin/cri-dockerd
@@ -345,8 +356,15 @@ main() {
     echo "Init Rocky Linux setting ..."
     init
 
-    echo "Installing CFSSL ..."
-    install_cfssl
+    if [ "${k8s_cfssl_enabled}" == "true" ]; then
+        echo "CFSSL Installation flag is enabled, proceeding with installation..."
+        install_cfssl
+    fi
+
+    if [ "${k8s_helm_enabled}" == "true" ]; then
+        echo "Helm Installation flag is enabled, proceeding with installation..."
+        install_helm
+    fi
 
     echo "Setup K8s ..."
     setup_k8s

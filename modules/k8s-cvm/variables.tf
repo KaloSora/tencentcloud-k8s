@@ -62,3 +62,40 @@ variable "cvm_cfs_csi_secret" {
   type = string
   description = "K8s cfs csi secret"
 }
+
+variable "k8s_version" {
+  type = string
+  description = "K8s version"
+}
+
+variable "k8s_cidr" {
+  type = string
+  description = "K8s CIDR"
+}
+
+variable "k8s_cri_dockerd_version" {
+  type = string
+  description = "K8s CRI Dockerd version"
+}
+
+variable "k8s_cfssl_version" {
+  type = string
+  description = "K8s CFSSL version"
+}
+
+variable "k8s_helm_version" {
+  type = string
+  description = "K8s HELM version"
+}
+
+variable "k8s_helm_enabled" {
+  type = bool
+  description = "Helm plugin installation flag"
+  default = false
+}
+
+variable "k8s_cfssl_enabled" {
+  type = bool
+  description = "CFSSL plugin installation flag"
+  default = false
+}

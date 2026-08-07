@@ -9,4 +9,11 @@ module "k8s-cvm" {
   cvm_cfs_secret_id = var.secret_id
   cvm_cfs_secret_key = var.secret_key
   cvm_cfs_csi_secret = var.cfs_csi_secret
+  k8s_version = var.k8s_version
+  k8s_cidr = var.k8s_cidr
+  k8s_cri_dockerd_version = var.k8s_cri_dockerd_version
+  k8s_cfssl_version = var.k8s_cfssl_version
+  k8s_helm_version = var.k8s_helm_version
+  k8s_helm_enabled = var.k8s_helm_enabled
+  k8s_cfssl_enabled = var.k8s_cfssl_enabled
 }
