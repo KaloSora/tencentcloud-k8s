@@ -98,13 +98,26 @@ install_cfssl () {
 install_helm() {
     echo "Installing Helm..."
 
+    export PATH=$PATH:/usr/local/bin
+
     curl -sLo helm.tar.gz "https://get.helm.sh/helm-v${k8s_helm_version}-linux-amd64.tar.gz"
     tar -zxvf helm.tar.gz
     chmod +x linux-amd64/helm
     sudo mv linux-amd64/helm /usr/local/bin/helm
 
-    echo "Installation completed. Version:"
-    helm version
+    if command -v helm &>/dev/null; then
+        echo "Helm installed successfully:"
+        helm version
+    else
+        echo "WARNING: Helm installation failed"
+    fi
+
+    # Add Helm stable repositor
+    helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null
+    helm repo update
+
+    echo "Repository list:"
+    helm repo list
 }
 
 setup_k8s() {

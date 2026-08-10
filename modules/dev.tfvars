@@ -22,7 +22,7 @@ k8s_cluster = {
 }
 
 ### K8s config variables
-k8s_helm_enabled = false  # Set to true to enable Helm plugin installation
+k8s_helm_enabled = true  # Set to true to enable Helm plugin installation
 k8s_cfssl_enabled = true  # Set to true to enable CFSSL plugin installation
 k8s_version = "1.28.8"
 k8s_cidr = "192.168.0.0/16"
