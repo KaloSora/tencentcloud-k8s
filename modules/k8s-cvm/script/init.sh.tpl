@@ -114,6 +114,7 @@ install_helm() {
 
     # Add Helm stable repositor
     helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx 
     helm repo update
 
     echo "Repository list:"
