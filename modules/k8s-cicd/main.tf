@@ -22,46 +22,37 @@ resource "null_resource" "k8s_cicd_provision" {
     port        = 22
     timeout     = "2m"
   }
-  
-  # Upload private key for server connection
-#   provisioner "file" {
-#     content     = local.ssh_private_key
-#     destination = local.cvm_key_server_private_path
-#   }
 
-#   # Local script upload with terraform template file
-#   provisioner "file" {
-#     destination = "/tmp/${local.init_script}"
-#     content = templatefile(
-#       "${path.module}/script/${local.init_script_tpl}",
-#       {
-#         "instance_ip" = "${each.value.public_ip}"
-#       }
-#     )
-#   }
+  # Local script upload with terraform template file
+  provisioner "file" {
+    destination = "/tmp/${local.init_script}"
+    content = templatefile(
+      "${path.module}/script/${local.init_script_tpl}",
+      {
+        "instance_ip" = "${each.value.public_ip}"
+      }
+    )
+  }
 
-#   # Remote-exec provisioner to run commands on the CVM instance via SSH
-#   provisioner "remote-exec" {
-#     inline = [
+  # Remote-exec provisioner to run commands on the CVM instance via SSH
+  provisioner "remote-exec" {
+    inline = [
 
-#       "chmod 600 ${local.cvm_key_server_private_path}",
-#       "echo 'IdentityFile ${local.cvm_key_server_private_path}' >> /root/.ssh/config",
-#       "chmod 600 /root/.ssh/config",
-#       "chmod +x /tmp/${local.init_script}",
+      "chmod +x /tmp/${local.init_script}",
 
-#       # Run the setup script
-#       "sudo sh /tmp/${local.init_script} > /tmp/${each.value.instance_name}.log 2>&1",
-#       "echo 'Execution completed!'"
-#     ]
-#   }
+      # Run the setup script
+      "sudo sh /tmp/${local.init_script} > /tmp/${each.value.instance_name}.log 2>&1",
+      "echo 'K8s CICD Execution completed!'"
+    ]
+  }
 
-#   # Download log file back to local for debugging
+  # Download log file back to local for debugging
 #   provisioner "local-exec" {
 #     command = <<-EOT
 #       mkdir -p ${path.module}/logs
-#       scp -i ${local.cvm_key_filename} \
+#       scp -i ${local.ssh_private_key} \
 #           -o StrictHostKeyChecking=no \
-#           ${var.cvm_login_user}@${each.value.public_ip}:/tmp/${each.value.instance_name}.log \
+#           ${var.cvm_login_user}@${var.k8s_master_public_ip}:/tmp/${each.value.instance_name}.log \
 #           ${path.module}/logs/${each.value.instance_name}.log
 #     EOT
 #   }
