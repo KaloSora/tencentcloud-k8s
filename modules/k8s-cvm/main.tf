@@ -1,7 +1,7 @@
 locals {
   cvm_key_name = "cvm_ssh_key"
-  cvm_key_filename = "${path.module}/ssh_key/cvm_key.pem"
-  cvm_key_filename_pub = "${path.module}/ssh_key/cvm_key.pub"
+  cvm_key_filename = var.ssh_key_private_key_path
+  cvm_key_filename_pub = var.ssh_key_public_key_path
   cvm_key_server_private_path = "/root/.ssh/cluster_key"
 
   init_script = "init.sh"
@@ -180,6 +180,7 @@ resource "null_resource" "master_provision" {
         "instance_name" = "${each.value.instance_name}"
         "instance_master_ip" = "${each.value.private_ip}"
         "ssh_key_path" = "${local.cvm_key_server_private_path}"
+        "ssh_private_key" = "${local.cvm_key_filename}"
         "cfs_enabled" = "${var.cvm_cfs_enabled}"
         "cfs_secret_id" = "${var.cvm_cfs_secret_id}"
         "cfs_secret_key" = "${var.cvm_cfs_secret_key}"
@@ -267,6 +268,7 @@ resource "null_resource" "node_provision" {
         "instance_name" = "${each.value.instance_name}"
         "instance_master_ip" = "${local.master_private_ip}"
         "ssh_key_path" = "${local.cvm_key_server_private_path}"
+        "ssh_private_key" = "${local.cvm_key_filename}"
         "cfs_enabled" = "${var.cvm_cfs_enabled}"
         "cfs_secret_id" = "${var.cvm_cfs_secret_id}"
         "cfs_secret_key" = "${var.cvm_cfs_secret_key}"

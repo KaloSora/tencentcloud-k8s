@@ -356,7 +356,7 @@ output() {
     echo "=== K8s CVM ${instance_name} Completed ==="
     echo "K8s Instance IP: ${instance_ip}"
     echo "K8s Instance ID: ${instance_id}"
-    echo "Execute cmd to connect server: ssh -i k8s-cvm/ssh_key/cvm_key.pem root@${instance_ip}"
+    echo "Execute cmd to connect server: ssh -i ${ssh_private_key} root@${instance_ip}"
 }
 
 k8s_auto_completion() {

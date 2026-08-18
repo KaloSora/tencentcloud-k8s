@@ -1,5 +1,7 @@
 module "k8s-cvm" {
   source = "./k8s-cvm"
+  ssh_key_private_key_path = var.ssh_key_private_key_path
+  ssh_key_public_key_path = var.ssh_key_public_key_path
   cvm_availability_zone = var.cvm_availability_zone
   cvm_charge_type = var.cvm_charge_type
   cvm_login_user = var.cvm_login_user

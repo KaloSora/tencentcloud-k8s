@@ -15,6 +15,16 @@ variable "secret_key" {
 #   description = "tencent cloud instance password"
 # }
 
+variable "ssh_key_private_key_path" {
+  type = string
+  description = "SSH private key path"
+}
+
+variable "ssh_key_public_key_path" {
+  type = string
+  description = "SSH public key path"
+}
+
 variable "region" {
   type = string
   description = "tencent cloud region"

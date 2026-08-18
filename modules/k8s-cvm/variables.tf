@@ -3,6 +3,16 @@
 #   description = "The password of the instance."
 # }
 
+variable "ssh_key_private_key_path" {
+  type = string
+  description = "SSH private key path"
+}
+
+variable "ssh_key_public_key_path" {
+  type = string
+  description = "SSH public key path"
+}
+
 variable "cvm_availability_zone" {
   type = string
   description = "The availability zone of the instance."

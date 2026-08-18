@@ -2,6 +2,10 @@ region = "ap-hongkong"
 vpc_id = "vpc-d7o9iy4y"
 subnet_id = "subnet-adxnlxc5"
 
+# SSH key variables - Absolute paths
+ssh_key_private_key_path = "/Users/yihui.li/YIHUI/github_workspace/tencentcloud-k8s/modules/ssh_key/cvm_key.pem"
+ssh_key_public_key_path = "/Users/yihui.li/YIHUI/github_workspace/tencentcloud-k8s/modules/ssh_key/cvm_key.pub"
+
 # CVM variables
 cvm_availability_zone = "ap-hongkong-2"
 cvm_charge_type    = "POSTPAID_BY_HOUR"
