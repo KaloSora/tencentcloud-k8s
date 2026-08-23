@@ -1,6 +1,6 @@
-output "public_ip" {
-  description = "vm public ip address"
-  value       = tencentcloud_instance.k8s_server[0].public_ip
+output "master_public_ip" {
+  description = "Public IP of the master node"
+  value       = try(tencentcloud_instance.k8s_server["master1"].public_ip, null)
 }
 
 output "instance_id" {

@@ -17,3 +17,8 @@ variable "cvm_login_user" {
   type = string
   description = "CVM login user"
 }
+
+variable "ingress_nginx_version" {
+  type = string
+  description = "Ingress Nginx version"
+}

@@ -1,6 +1,7 @@
 modules/.terraform/
 modules/.terraform.lock.hcl
 modules/k8s-cvm/logs/
+modules/k8s-cicd/logs/
 modules/k8s-cvm/ssh_key/
 modules/ssh_key/
 *.tfstate

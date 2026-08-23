@@ -41,6 +41,11 @@ resource "local_file" "cvm_private_key" {
   }
 }
 
+resource "local_file" "cvm_public_key" {
+  content  = tls_private_key.cvm_key.public_key_openssh
+  filename = "${local.cvm_key_filename_pub}"
+}
+
 # Upload keypair to tencent cloud
 resource "tencentcloud_key_pair" "cvm-key" {
   key_name   = local.cvm_key_name

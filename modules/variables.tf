@@ -124,3 +124,8 @@ variable "k8s_cfssl_enabled" {
   description = "CFSSL plugin installation flag"
   default = false
 }
+
+variable "ingress_nginx_version" {
+  type = string
+  description = "Ingress Nginx version"
+}
