@@ -18,4 +18,7 @@ module "k8s-cvm" {
   k8s_helm_version = var.k8s_helm_version
   k8s_helm_enabled = var.k8s_helm_enabled
   k8s_cfssl_enabled = var.k8s_cfssl_enabled
+  vpc_id = var.vpc_id
+  subnet_id = var.subnet_id
+  cfs_cidr = var.cfs_allow_cidr
 }

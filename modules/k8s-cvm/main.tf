@@ -79,6 +79,17 @@ data "tencentcloud_instance_types" "cvm_type" {
   memory_size    = each.value.memory_size
 }
 
+# K8s cfs
+module "k8s-cfs" {
+  count = var.cvm_cfs_enabled ? 1 : 0
+  source = "../k8s-cfs"
+  availability_zone = var.cvm_availability_zone
+  vpc_id = var.vpc_id
+  subnet_id = var.subnet_id
+  cfs_enabled = var.cvm_cfs_enabled
+  cfs_cidr = var.cfs_cidr
+}
+
 # Create a k8s server
 resource "tencentcloud_instance" "k8s_server" {
 

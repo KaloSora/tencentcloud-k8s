@@ -44,6 +44,21 @@ variable "cvm_cfs_enabled" {
   default = false
 }
 
+variable "vpc_id" {
+  type = string
+  description = "VPC id on tencent cloud"
+}
+
+variable "subnet_id" {
+  type = string
+  description = "subnet id on tencent cloud"
+}
+
+variable "cfs_cidr" {
+  description = "CFS CIDR block"
+  type        = string
+}
+
 # variable "cvm_cfs_ip" {
 #   type = string
 #   description = "K8s cfs mount ip"
