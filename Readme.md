@@ -60,6 +60,6 @@ kubectl get ns
 # Terraform Runbook
 | Step     | Command | Description  |
 | :------- | :---: | ----: |
-| 1     | terraform init -backend-config="YOUR_BUCKET" | To deploy K8s on Tencent cloud CVM  |
-| 2     | terraform apply -target=module.k8s-cvm -var-file="dev.tfvars"   | To deploy K8s on Tencent cloud CVM  |
+| 1     | terraform init -backend-config="YOUR_BUCKET" | To deploy K8s on CVM  |
+| 2     | terraform apply -target=module.k8s-cvm -var-file="dev.tfvars"   | To deploy K8s on CVM |
 | 3     | terraform apply -target=module.k8s-cicd -var-file="dev.tfvars"   | To deploy K8s CICD to CVM K8s  |
