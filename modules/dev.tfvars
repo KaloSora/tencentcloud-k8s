@@ -42,5 +42,5 @@ cfs_csi_secret = "cfs-csi-api-key" # Hardcode the value since it's defined in "c
 ### K8s CICD variables
 helm_ingress_nginx_version = "4.8.3"
 helm_harbor_version = "1.19.2"
-helm_harbor_url = "harbor.example.com"
+helm_harbor_url = "harbor.core.com"
 
