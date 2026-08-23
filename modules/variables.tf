@@ -125,7 +125,17 @@ variable "k8s_cfssl_enabled" {
   default = false
 }
 
-variable "ingress_nginx_version" {
+variable "helm_ingress_nginx_version" {
   type = string
   description = "Ingress Nginx version"
+}
+
+variable "helm_harbor_version" {
+  type = string
+  description = "Harbor version"
+}
+
+variable "helm_harbor_url" {
+  type = string
+  description = "Harbor URL"
 }

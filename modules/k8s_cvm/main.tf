@@ -3,6 +3,7 @@ locals {
   cvm_key_filename = var.ssh_key_private_key_path
   cvm_key_filename_pub = var.ssh_key_public_key_path
   cvm_key_server_private_path = "/root/.ssh/cluster_key"
+  kube_config_path = "/Users/yihui.li/YIHUI/github_workspace/tencentcloud-k8s/modules/kubeconfig/config"
 
   init_script = "init.sh"
   init_script_tpl = "init.sh.tpl"
@@ -23,6 +24,7 @@ locals {
 
   # Get the 1st master private ip
   master_private_ip = length(local.master_instances) > 0 ? one(values(local.master_instances)).private_ip : ""
+  master_public_ip = length(local.master_instances) > 0 ? one(values(local.master_instances)).public_ip : ""
 }
 
 # Create local ssh key pair
@@ -267,7 +269,7 @@ resource "null_resource" "node_provision" {
   }
   
   # Upload private key for server connection
-    provisioner "file" {
+  provisioner "file" {
     content     = tls_private_key.cvm_key.private_key_pem
     destination = local.cvm_key_server_private_path
   }
@@ -323,6 +325,31 @@ resource "null_resource" "node_provision" {
           -o StrictHostKeyChecking=no \
           ${var.cvm_login_user}@${each.value.public_ip}:/tmp/${each.value.instance_name}.log \
           ${path.module}/logs/${each.value.instance_name}.log
+    EOT
+  }
+}
+
+### Download kubeconfig file from master node to local machine for kubectl access
+resource "null_resource" "download_kubeconfig" {
+  depends_on = [null_resource.master_provision]
+
+  connection {
+    type        = "ssh"
+    host        = local.master_public_ip
+    user        = var.cvm_login_user
+    private_key = tls_private_key.cvm_key.private_key_pem
+    port        = 22
+    timeout     = "2m"
+  }
+
+  # Download log file back to local for debugging
+  provisioner "local-exec" {
+    command = <<-EOT
+      mkdir -p ${path.module}/logs
+      scp -i ${local.cvm_key_filename} \
+          -o StrictHostKeyChecking=no \
+          ${var.cvm_login_user}@${local.master_public_ip}:~/.kube/config \
+          ${local.kube_config_path}
     EOT
   }
 }

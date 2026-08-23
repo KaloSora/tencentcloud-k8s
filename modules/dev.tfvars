@@ -36,9 +36,11 @@ k8s_helm_version="3.17.0"
 
 ### Cloud file system variables
 cfs_enabled = true  # Set to true to enable CFS integration
-cfs_allow_cidr = "172.0.0.0/8" # CFS access group CIDR
+cfs_allow_cidr = "172.0.0.0/8" # CFS access group CIDR, align with VPC CIDR. Here using default VPC CIDR
 cfs_csi_secret = "cfs-csi-api-key" # Hardcode the value since it's defined in "csi-provisioner-cfsplugin-new.yaml"
 
 ### K8s CICD variables
-ingress_nginx_version = "4.8.3"
+helm_ingress_nginx_version = "4.8.3"
+helm_harbor_version = "1.19.2"
+helm_harbor_url = "harbor.example.com"
 
