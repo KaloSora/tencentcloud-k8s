@@ -85,9 +85,9 @@ data "tencentcloud_instance_types" "cvm_type" {
 }
 
 # K8s cfs
-module "k8s-cfs" {
+module "k8s_cfs" {
   count = var.cvm_cfs_enabled ? 1 : 0
-  source = "../k8s-cfs"
+  source = "../k8s_cfs"
   availability_zone = var.cvm_availability_zone
   vpc_id = var.vpc_id
   subnet_id = var.subnet_id
