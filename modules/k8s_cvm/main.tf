@@ -342,7 +342,8 @@ resource "null_resource" "download_kubeconfig" {
     timeout     = "2m"
   }
 
-  # Download log file back to local for debugging
+  # Download kubeconfig file back to local for debugging
+  # To verify: kubectl --kubeconfig=./kubeconfig/config get nodes
   provisioner "local-exec" {
     command = <<-EOT
       mkdir -p ${path.module}/logs
@@ -350,6 +351,10 @@ resource "null_resource" "download_kubeconfig" {
           -o StrictHostKeyChecking=no \
           ${var.cvm_login_user}@${local.master_public_ip}:~/.kube/config \
           ${local.kube_config_path}
+      
+      perl -pi -e 's/certificate-authority-data:.*//' ${local.kube_config_path}
+      perl -pi -e 's|server: https://[0-9.]+:6443|server: https://${local.master_public_ip}:6443|' ${local.kube_config_path}
+      perl -pi -e 's|(server: https://${local.master_public_ip}:6443)|$1\n    insecure-skip-tls-verify: true|' ${local.kube_config_path}
     EOT
   }
 }
