@@ -1,3 +1,13 @@
+variable "vpc_id" {
+  type = string
+  description = "VPC id on tencent cloud"
+}
+
+variable "subnet_id" {
+  type = string
+  description = "subnet id on tencent cloud"
+}
+
 variable "ssh_key_private_key_path" {
   type = string
   description = "SSH private key path"
@@ -18,7 +28,22 @@ variable "cvm_login_user" {
   description = "CVM login user"
 }
 
+variable "cfs_pgroup_id" {
+  type = string
+  description = "CFS access group ID"
+}
+
 variable "ingress_nginx_version" {
   type = string
-  description = "Ingress Nginx version"
+  description = "Helm Ingress Nginx version"
+}
+
+variable "harbor_version" {
+  type = string
+  description = "Helm Harbor version"
+}
+
+variable "harbor_url" {
+  type = string
+  description = "Helm Harbor URL"
 }
