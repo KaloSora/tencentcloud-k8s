@@ -43,11 +43,11 @@ For tencent cloud oss backend, must provide the secret id and secret key, otherw
 
 4. Create vm on tencent cloud
 ```bash
-terraform plan -target=module.k8s-cvm -var-file="./dev.tfvars"
-terraform apply -target=module.k8s-cvm -var-file="./dev.tfvars"
+terraform plan -target=module.k8s_cvm -var-file="./dev.tfvars"
+terraform apply -target=module.k8s_cvm -var-file="./dev.tfvars"
 
 # To destroy 
-terraform destroy -target=module.k8s-cvm -var-file="./dev.tfvars"
+terraform destroy -target=module.k8s_cvm -var-file="./dev.tfvars"
 ```
 
 5. SSH to server to perform health check
