@@ -18,6 +18,11 @@ variable "ssh_key_public_key_path" {
   description = "SSH public key path"
 }
 
+variable "k8s_kubeconfig_path" {
+  type = string
+  description = "Path to the kubeconfig file"
+}
+
 variable "k8s_master_public_ip" {
   type = string
   description = "K8s master public ip"

@@ -139,3 +139,8 @@ variable "helm_harbor_url" {
   type = string
   description = "Harbor URL"
 }
+
+variable "k8s_kubeconfig_path" {
+  type = string
+  description = "Path to the kubeconfig file"
+}
