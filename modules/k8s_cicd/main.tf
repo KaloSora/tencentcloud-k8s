@@ -34,8 +34,7 @@ resource "helm_release" "ingress_nginx" {
   name             = "ingress-nginx"
   namespace        = "ingress-nginx"
   create_namespace = true
-  repository       = "https://helm-charts.itboon.top/ingress-nginx"
-  # repository       = "https://kubernetes.github.io/ingress-nginx"
+  repository       = "https://kubernetes.github.io/ingress-nginx"
   chart            = "ingress-nginx"
   version          = var.ingress_nginx_version
   timeout          = 300
@@ -57,4 +56,74 @@ resource "helm_release" "ingress_nginx" {
           type: ClusterIP
     EOT
   ]
+}
+
+### Harbor 
+resource "helm_release" "harbor" {
+
+  depends_on = [helm_release.ingress_nginx]
+
+  name             = "harbor"
+  repository       = "https://helm.goharbor.io"
+  chart            = "harbor"
+  version          = var.harbor_version
+  namespace        = "harbor"
+  create_namespace = true
+  timeout          = 300
+
+  values = [
+    <<-EOT
+      expose:
+        type: ingress
+        tls:
+          enabled: true
+          certSource: "auto"
+          secret:
+            secretName: "harbor-tls"
+        ingress:
+          className: "nginx"
+          hosts:
+            core: "${var.harbor_url}"
+          annotations:
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+            nginx.ingress.kubernetes.io/proxy-body-size: "0"
+      externalURL: "https://${var.harbor_url}"
+      harborAdminPassword: "${var.harbor_password}"
+
+      ### PVC settings
+      persistence:
+        enabled: true
+        resourcePolicy: "delete"
+        persistentVolumeClaim:
+          registry:
+            storageClass: "${local.storage_class_name}"
+            size: "100Gi"
+          jobservice:
+            jobLog:
+              storageClass: "${local.storage_class_name}"
+              size: "1Gi"
+          trivy:
+            storageClass: "${local.storage_class_name}"
+            size: "5Gi"
+          database:
+            storageClass: "${local.storage_class_name}"
+            size: "10Gi"
+          redis:
+            storageClass: "${local.storage_class_name}"
+            size: "5Gi"
+
+      ### Resource limit
+      core:
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+      registry:
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+    EOT
+  ]
+
 }

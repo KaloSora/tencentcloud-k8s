@@ -140,6 +140,12 @@ variable "helm_harbor_url" {
   description = "Harbor URL"
 }
 
+variable "helm_harbor_password" {
+  type = string
+  description = "Harbor admin password"
+  default = "Harbor12345"
+}
+
 variable "k8s_kubeconfig_path" {
   type = string
   description = "Path to the kubeconfig file"

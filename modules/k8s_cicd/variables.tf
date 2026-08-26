@@ -52,3 +52,8 @@ variable "harbor_url" {
   type = string
   description = "Helm Harbor URL"
 }
+
+variable "harbor_password" {
+  type = string
+  description = "Harbor admin password"
+}

@@ -11,4 +11,5 @@ module "k8s_cicd" {
   ingress_nginx_version = var.helm_ingress_nginx_version
   harbor_version = var.helm_harbor_version
   harbor_url = var.helm_harbor_url
+  harbor_password = var.helm_harbor_password
 }
