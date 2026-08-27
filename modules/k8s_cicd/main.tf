@@ -41,6 +41,9 @@ resource "kubernetes_storage_class" "cfs_shared" {
 ### This is to avoid the issue of LoadBalancer service type to pending status and stuck terraform provider
 ### Health check: http://NodeIP:10254/healthz
 resource "helm_release" "ingress_nginx" {
+  
+  depends_on = [kubernetes_storage_class.cfs_shared]
+
   name             = "ingress-nginx"
   namespace        = "ingress-nginx"
   create_namespace = true
@@ -71,7 +74,7 @@ resource "helm_release" "ingress_nginx" {
 ### Harbor 
 resource "helm_release" "harbor" {
 
-  depends_on = [helm_release.ingress_nginx]
+  depends_on = [helm_release.ingress_nginx, kubernetes_storage_class.cfs_shared]
 
   name             = "harbor"
   repository       = "https://helm.goharbor.io"
