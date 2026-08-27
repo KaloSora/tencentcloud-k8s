@@ -27,6 +27,16 @@ resource "kubernetes_storage_class" "cfs_shared" {
   }
 }
 
+# resource "tencentcloud_clb_instance" "k8s_clb" {
+#   clb_name = "my-pay-as-you-go-clb"
+#   network_type = "OPEN"
+#   # charge_type = "POSTPAID_BY_HOUR"
+#   internet_charge_type = "TRAFFIC_POSTPAID_BY_HOUR"
+#   internet_bandwidth_max_out = 10
+#   vpc_id    = var.vpc_id
+#   subnet_id = var.subnet_id
+# }
+
 ### Set ingress-nginx service type to ClusterIP
 ### This is to avoid the issue of LoadBalancer service type to pending status and stuck terraform provider
 ### Health check: http://NodeIP:10254/healthz
@@ -43,7 +53,7 @@ resource "helm_release" "ingress_nginx" {
     <<-EOT
       controller:
         healthCheck:
-          initialDelaySeconds: 10
+          initialDelaySeconds: 60
           periodSeconds: 10
         hostNetwork: true
         dnsPolicy: ClusterFirstWithHostNet
