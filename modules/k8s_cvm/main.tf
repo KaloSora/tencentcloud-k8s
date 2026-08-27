@@ -118,9 +118,10 @@ resource "tencentcloud_instance" "k8s_server" {
 
   tags = {
     Name = each.value.instance_name
-    Role = each.key
     CPU  = tostring(each.value.cpu_core_count)
     Mem  = tostring(each.value.memory_size)
+    Purpose = each.value.tags.purpose
+    Role = each.value.tags.role
   }
 }
 

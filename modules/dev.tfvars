@@ -15,13 +15,13 @@ cvm_login_user     = "root"
 # K8s cluster variables
 k8s_cluster = {
   "master1" = {
-    instance_name = "k8s-master-1", cpu_core_count = 4, memory_size = 8
+    instance_name = "k8s-master-1", cpu_core_count = 4, memory_size = 8, tags = { "role" = "master", "purpose" = "master" }
   }
   "node1" = {
-    instance_name = "k8s-node-1", cpu_core_count = 4, memory_size = 8
+    instance_name = "k8s-node-1", cpu_core_count = 4, memory_size = 8, tags = { "role" = "worker", "purpose" = "devops" }
   }
   # "node2" = {
-  #   instance_name = "k8s-node-2", cpu_core_count = 4, memory_size = 8
+  #   instance_name = "k8s-node-2", cpu_core_count = 4, memory_size = 8, tags = { "role" = "worker", "purpose" = "app" }
   # }
 }
 
