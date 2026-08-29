@@ -23,8 +23,14 @@ locals {
   }
 
   # Get the 1st master private ip
-  master_private_ip = length(local.master_instances) > 0 ? one(values(local.master_instances)).private_ip : ""
-  master_public_ip = length(local.master_instances) > 0 ? one(values(local.master_instances)).public_ip : ""
+  master_instances_list = values(local.master_instances)
+  first_master_key = one([for k, cfg in var.k8s_cluster : k if try(cfg.is_first_master, "") == "true"])
+  first_master_instance = local.first_master_key != null ? tencentcloud_instance.k8s_server[local.first_master_key] : null
+  master_private_ip = local.first_master_instance != null ? local.first_master_instance.private_ip : ""
+  master_public_ip  = local.first_master_instance != null ? local.first_master_instance.public_ip : ""
+
+  # master_private_ip = length(local.master_instances_list) > 0 ? local.master_instances_list[0].private_ip : ""
+  # master_public_ip  = length(local.master_instances_list) > 0 ? local.master_instances_list[0].public_ip : ""
 }
 
 # Create local ssh key pair
@@ -137,11 +143,11 @@ resource "tencentcloud_security_group_lite_rule" "default" {
   ingress = [
     "ACCEPT#0.0.0.0/0#22#TCP",
     "ACCEPT#0.0.0.0/0#10254#TCP", # For nginx ingress health check port
-    "ACCEPT#172.16.0.0/12#10250#TCP", # For HongKong AZ inbound / outbound
-    "ACCEPT#172.16.0.0/12#ALL#ALL",
     "ACCEPT#0.0.0.0/0#6443#TCP",
     "ACCEPT#0.0.0.0/0#443#TCP", # Allow HTTPS traffic for Ingress-nginx
     "ACCEPT#0.0.0.0/0#80#TCP",  # For Ingress-nginx
+    "ACCEPT#172.16.0.0/12#10250#TCP", # For HongKong AZ inbound / outbound
+    "ACCEPT#172.16.0.0/12#ALL#ALL",
     "ACCEPT#192.168.0.0/16#ALL#ALL", # Allow K8s cluster internal communication within private network
     "ACCEPT#10.96.0.0/12#ALL#ALL",  # Allow K8s cluster service CIDR
     "ACCEPT#0.0.0.0/0#4789#UDP" # Allow VXLAN overlay network traffic for CNI plugin Calico/Flannel
@@ -198,7 +204,7 @@ resource "null_resource" "master_provision" {
         "instance_id" = "${each.value.id}"
         "instance_role"  = "master"
         "instance_name" = "${each.value.instance_name}"
-        "instance_master_ip" = "${each.value.private_ip}"
+        "instance_master_ip" = "${each.value.private_ip}" ## This param won't be used by master vm, can ignore
         "ssh_key_path" = "${local.cvm_key_server_private_path}"
         "ssh_private_key" = "${local.cvm_key_filename}"
         "cfs_enabled" = "${var.cvm_cfs_enabled}"
@@ -212,6 +218,8 @@ resource "null_resource" "master_provision" {
         "k8s_cfssl_enabled" = "${var.k8s_cfssl_enabled}"
         "k8s_helm_enabled" = "${var.k8s_helm_enabled}"
         "k8s_helm_version" = "${var.k8s_helm_version}"
+        "k8s_first_master_flag" = try(var.k8s_cluster[each.key].is_first_master, "") == "true" ? "true" : "false"
+        "k8s_first_master_ip" = "${local.master_private_ip}"
       }
     )
   }
@@ -300,6 +308,8 @@ resource "null_resource" "node_provision" {
         "k8s_cfssl_enabled" = "${var.k8s_cfssl_enabled}"
         "k8s_helm_enabled" = "${var.k8s_helm_enabled}"
         "k8s_helm_version" = "${var.k8s_helm_version}"
+        "k8s_first_master_flag" = try(var.k8s_cluster[each.key].is_first_master, "") == "true" ? "true" : "false"
+        "k8s_first_master_ip" = "${local.master_private_ip}"
       }
     )
   }

@@ -27,6 +27,10 @@ init() {
     swapoff -a
     sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 
+    # Set hostname
+    hostnamectl set-hostname ${instance_name}
+    echo "$(hostname -I | awk '{print $1}') ${instance_name}" >> /etc/hosts
+
     # Set timezone
     timedatectl set-timezone Asia/Shanghai
 
@@ -196,7 +200,6 @@ EOF
     systemctl start cri-docker
     systemctl is-active cri-docker
 
-    # 3. Add Kubernetes AliCloud yum source
     cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
@@ -218,6 +221,7 @@ EOF
     ROLE=${instance_role}
     MASTER_IP=${instance_master_ip}
     JOIN_CMD_FILE="/root/join_command.sh"
+    JOIN_CONTROL_PLANE_FILE="/root/join-control-plane.sh"
     LOCAL_IP=$(hostname -I | awk '{print $1}')
 
     if [[ "$ROLE" == "master" ]]; then
@@ -245,11 +249,15 @@ kubernetesVersion: v$K8S_VERSION
 imageRepository: registry.aliyuncs.com/google_containers
 networking:
   podSubnet: $K8S_CIDR
+controlPlaneEndpoint: "${k8s_first_master_ip}:6443" 
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 mode: "ipvs"
 EOF
+
+    if [[ "${k8s_first_master_flag}" == "true" ]]; then
+        echo "This is the first master, initializing cluster..."
 
         # Initialize cluster with IPVS-enabled kube-proxy
         kubeadm init --config=/root/kubeadm-config.yaml
@@ -260,6 +268,14 @@ EOF
 
         # Generate join command (note the --cri-socket parameter)
         kubeadm token create --print-join-command | sed 's|$| --cri-socket=unix:///var/run/cri-dockerd.sock|' > $JOIN_CMD_FILE
+        echo "Node join command saved to $JOIN_CMD_FILE"
+
+        # Generate control-plane join command
+        CERT_KEY=$(kubeadm init phase upload-certs --upload-certs | tail -1)
+        kubeadm token create --print-join-command | \
+                sed 's|$| --control-plane --certificate-key '"$CERT_KEY"' --cri-socket=unix:///var/run/cri-dockerd.sock|' \
+                > $JOIN_CONTROL_PLANE_FILE
+        echo "Control-plane join command saved to $JOIN_CONTROL_PLANE_FILE"
 
         # Install Calico
         kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.4/manifests/tigera-operator.yaml
@@ -312,14 +328,17 @@ EOF
             kubectl apply -f csi-provisioner-cfsplugin-new.yaml
             kubectl apply -f csi-nodeplugin-cfsplugin-new.yaml
 
-            echo ">>> Waiting for CFS CSI provisioner to be ready (timeout 120s)..."
-            kubectl wait --for=condition=ready pod -l app=csi-provisioner-cfsplugin -n kube-system --timeout=120s || {
-                echo "WARNING: CFS CSI provisioner did not become ready within 120s. Continuing anyway..."
-                echo "CFS CSI provisioner health check: kubectl get pods -n kube-system | grep cfsplugin"
+            # echo ">>> Waiting for CFS CSI provisioner to be ready (timeout 120s)..."
+            # kubectl wait --for=condition=ready pod -l app=csi-provisioner-cfsplugin -n kube-system --timeout=120s || {
+            #     echo "WARNING: CFS CSI provisioner did not become ready within 120s. Continuing anyway..."
+            #     echo "CFS CSI provisioner health check: kubectl get pods -n kube-system | grep cfsplugin"
                 
-                kubectl get pods -n kube-system | grep cfsplugin || true
-            }
-        
+            #     kubectl get pods -n kube-system | grep cfsplugin || true
+            # }
+
+            sleep 5
+            kubectl get pods -n kube-system | grep cfsplugin
+
             # Health check CSIDriver
             if kubectl get csidriver | grep -q "com.tencent.cloud.csi.cfs"; then
                 echo ">>> CSIDriver registered successfully."
@@ -327,13 +346,63 @@ EOF
                 echo "WARNING: CSIDriver registration failed."
             fi
         fi
+    else
+        echo "This is an additional master, joining as control-plane..."
+
+        # Wait for master control-plane in 5 mins
+        TIMEOUT=300
+        START_TIME=$SECONDS
+        until curl -k -s https://${k8s_first_master_ip}:6443/healthz | grep -q "ok"; do
+            ELAPSED=$((SECONDS - START_TIME))
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+                echo "Error: Timeout waiting for first master (${k8s_first_master_ip}) API server."
+                exit 1
+            fi
+            echo "Waiting for first master API server... ($ELAPSED seconds / $TIMEOUT seconds)"
+            sleep 5
+        done
+
+        echo "API server is ready, waiting for join script to be written..."
+        sleep 10
+
+        # Retry with SCP
+        MAX_RETRIES=5
+        RETRY=0
+        while [ $RETRY -lt $MAX_RETRIES ]; do
+            scp -i ${ssh_key_path} -o StrictHostKeyChecking=no root@${k8s_first_master_ip}:$JOIN_CONTROL_PLANE_FILE /root/
+            if [ $? -eq 0 ]; then
+                break
+            fi
+            echo "scp failed (attempt $((RETRY+1))/$MAX_RETRIES), retrying in 5s..."
+            sleep 10
+            RETRY=$((RETRY+1))
+        done
+
+        if [ ! -f "$JOIN_CONTROL_PLANE_FILE" ]; then
+            echo "Error: Failed to copy $JOIN_CONTROL_PLANE_FILE after $MAX_RETRIES attempts."
+            exit 1
+        fi
+
+        if [[ -f "$JOIN_CONTROL_PLANE_FILE" ]]; then
+            bash $JOIN_CONTROL_PLANE_FILE --node-name ${instance_name}
+            echo "Control-plane node ${instance_name} joined successfully."
+
+            mkdir -p $HOME/.kube
+            cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+            chown $(id -u):$(id -g) $HOME/.kube/config
+        else
+            echo "Error: $JOIN_CONTROL_PLANE_FILE not found after scp."
+            exit 1
+        fi
+    fi
+
 
     elif [[ "$ROLE" == "node" ]]; then
         echo ">>> Start to configure Kubernetes Node node"
 
         if [[ ! -f "$JOIN_CMD_FILE" ]] && [[ -n "$MASTER_IP" ]]; then
             echo "Trying to copy join command from master node $MASTER_IP..."
-            scp -i ${ssh_key_path} -o StrictHostKeyChecking=no root@${instance_master_ip}:/root/join_command.sh /root/
+            scp -i ${ssh_key_path} -o StrictHostKeyChecking=no root@$MASTER_IP:$JOIN_CMD_FILE /root/
         fi
 
         if [[ -f "$JOIN_CMD_FILE" ]]; then

@@ -14,15 +14,12 @@ cvm_login_user     = "root"
 
 # K8s cluster variables
 k8s_cluster = {
-  "master1" = {
-    instance_name = "k8s-master-1", cpu_core_count = 4, memory_size = 8, tags = { "role" = "master", "purpose" = "master" }
-  }
-  "node1" = {
-    instance_name = "k8s-node-1", cpu_core_count = 4, memory_size = 8, tags = { "role" = "worker", "purpose" = "devops" }
-  }
-  # "node2" = {
-  #   instance_name = "k8s-node-2", cpu_core_count = 4, memory_size = 8, tags = { "role" = "worker", "purpose" = "app" }
-  # }
+  "master1" = {instance_name = "k8s-master-1", cpu_core_count = 4, memory_size = 8, is_first_master = "true", tags = { "role" = "master", "purpose" = "master" }}
+  "master2" = {instance_name = "k8s-master-2", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "master", "purpose" = "master" }}
+  "master3" = {instance_name = "k8s-master-3", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "master", "purpose" = "master" }}
+  "node1" = {instance_name = "k8s-node-1", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "worker", "purpose" = "devops" }}
+  "node2" = {instance_name = "k8s-node-2", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "worker", "purpose" = "app" }}
+  "node3" = {instance_name = "k8s-node-3", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "worker", "purpose" = "app" }}
 }
 
 ### K8s config variables
