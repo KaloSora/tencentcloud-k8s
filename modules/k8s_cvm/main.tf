@@ -15,6 +15,12 @@ locals {
   init_var_cri_dockerd_version = var.k8s_cri_dockerd_version
   init_var_helm_version = var.k8s_helm_version
 
+  # Set instance list by cost saving mode
+  final_k8s_cluster = var.k8s_cost_saving_mode ? {
+      master1 = var.k8s_cluster["master1"]
+      node1   = var.k8s_cluster["node1"]
+  } : var.k8s_cluster
+
   ### Dynamic variable after cvm creation below ###
   # Filter master instances for master provisioning
   master_instances = {
@@ -23,8 +29,7 @@ locals {
   }
 
   # Get the 1st master private ip
-  master_instances_list = values(local.master_instances)
-  first_master_key = one([for k, cfg in var.k8s_cluster : k if try(cfg.is_first_master, "") == "true"])
+  first_master_key = one([for k, cfg in local.final_k8s_cluster : k if try(cfg.is_first_master, "") == "true"])
   first_master_instance = local.first_master_key != null ? tencentcloud_instance.k8s_server[local.first_master_key] : null
   master_private_ip = local.first_master_instance != null ? local.first_master_instance.private_ip : ""
   master_public_ip  = local.first_master_instance != null ? local.first_master_instance.public_ip : ""
@@ -75,7 +80,7 @@ data "tencentcloud_images" "ubuntu" {
 # Get availability instance types
 data "tencentcloud_instance_types" "cvm_type" {
 
-  for_each = var.k8s_cluster
+  for_each = local.final_k8s_cluster
 
   # Filter instance family
   filter {
@@ -106,7 +111,7 @@ module "k8s_cfs" {
 # Create a k8s server
 resource "tencentcloud_instance" "k8s_server" {
 
-  for_each = var.k8s_cluster
+  for_each = local.final_k8s_cluster
 
   depends_on                 = [tencentcloud_security_group_lite_rule.default]
   instance_name              = "${each.value.instance_name}"
@@ -218,7 +223,7 @@ resource "null_resource" "master_provision" {
         "k8s_cfssl_enabled" = "${var.k8s_cfssl_enabled}"
         "k8s_helm_enabled" = "${var.k8s_helm_enabled}"
         "k8s_helm_version" = "${var.k8s_helm_version}"
-        "k8s_first_master_flag" = try(var.k8s_cluster[each.key].is_first_master, "") == "true" ? "true" : "false"
+        "k8s_first_master_flag" = try(local.final_k8s_cluster[each.key].is_first_master, "") == "true" ? "true" : "false"
         "k8s_first_master_ip" = "${local.master_private_ip}"
       }
     )
@@ -308,7 +313,7 @@ resource "null_resource" "node_provision" {
         "k8s_cfssl_enabled" = "${var.k8s_cfssl_enabled}"
         "k8s_helm_enabled" = "${var.k8s_helm_enabled}"
         "k8s_helm_version" = "${var.k8s_helm_version}"
-        "k8s_first_master_flag" = try(var.k8s_cluster[each.key].is_first_master, "") == "true" ? "true" : "false"
+        "k8s_first_master_flag" = try(local.final_k8s_cluster[each.key].is_first_master, "") == "true" ? "true" : "false"
         "k8s_first_master_ip" = "${local.master_private_ip}"
       }
     )

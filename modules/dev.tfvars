@@ -13,6 +13,10 @@ cvm_os_regex       = "^Rocky Linux 9\\.3"
 cvm_login_user     = "root"
 
 # K8s cluster variables
+# It will only take master1 and node1 if enabled
+k8s_cost_saving_mode = true
+
+# Take master1 as the 1st control-plan since is_first_master = "true"
 k8s_cluster = {
   "master1" = {instance_name = "k8s-master-1", cpu_core_count = 4, memory_size = 8, is_first_master = "true", tags = { "role" = "master", "purpose" = "master" }}
   "master2" = {instance_name = "k8s-master-2", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "master", "purpose" = "master" }}

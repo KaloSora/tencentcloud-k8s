@@ -38,6 +38,11 @@ variable "k8s_cluster" {
   description = "K8s cluster object"
 }
 
+variable "k8s_cost_saving_mode" {
+  type = bool
+  description = "K8s cluster object"
+}
+
 variable "cvm_cfs_enabled" {
   type = bool
   description = "K8s cfs enabled flag"

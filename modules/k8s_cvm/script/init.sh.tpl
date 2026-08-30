@@ -363,7 +363,7 @@ EOF
         done
 
         echo "API server is ready, waiting for join script to be written..."
-        sleep 10
+        sleep 30
 
         # Retry with SCP
         MAX_RETRIES=5

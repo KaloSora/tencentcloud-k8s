@@ -67,6 +67,11 @@ variable "k8s_cluster" {
   description = "K8s cluster object"
 }
 
+variable "k8s_cost_saving_mode" {
+  type = bool
+  description = "K8s cluster object"
+}
+
 ### Cloud File Storage config
 variable "cfs_enabled" {
   type = bool
