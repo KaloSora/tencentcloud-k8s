@@ -375,3 +375,39 @@ resource "null_resource" "download_kubeconfig" {
     EOT
   }
 }
+
+### Tag k8s node base on existing CVM tag
+resource "null_resource" "k8s_label_nodes" {
+  depends_on = [null_resource.download_kubeconfig, null_resource.node_provision]
+
+  # Listen node instance tag
+  triggers = {
+    # When the node tag changed, it will be trigger again
+    node_tags = jsonencode({
+      for k, inst in tencentcloud_instance.k8s_server : k => inst.tags["Purpose"]
+      if can(regex("node", inst.instance_name))
+    })
+    # When the node name changed, it will be trigger again
+    node_names = jsonencode([
+      for k, inst in tencentcloud_instance.k8s_server : inst.instance_name
+      if can(regex("node", inst.instance_name))
+    ])
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      KUBECONFIG="${local.kube_config_path}"
+      
+      # Waiting for node ready
+      kubectl --kubeconfig="$KUBECONFIG" wait --for=condition=Ready nodes --all --timeout=300s
+
+      # Tag each node
+      %{ for key, inst in tencentcloud_instance.k8s_server ~}
+        %{ if can(regex("node", inst.instance_name)) ~}
+          echo "Labeling node ${inst.instance_name} with purpose=${inst.tags["Purpose"]}"
+          kubectl --kubeconfig="$KUBECONFIG" label nodes ${inst.instance_name} purpose="${inst.tags["Purpose"]}" --overwrite || echo "Label failed for ${inst.instance_name}"
+        %{ endif ~}
+      %{ endfor ~}
+    EOT
+  }
+}
