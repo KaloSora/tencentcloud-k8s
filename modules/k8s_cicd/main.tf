@@ -1,5 +1,6 @@
 locals {
   storage_class_name = "cfs-shared-storageclass"
+  helm_default_timeout = 300
 }
 
 ### K8s storageClass with CFS CSI provider
@@ -50,7 +51,7 @@ resource "helm_release" "ingress_nginx" {
   repository       = "https://kubernetes.github.io/ingress-nginx"
   chart            = "ingress-nginx"
   version          = var.ingress_nginx_version
-  timeout          = 300
+  timeout          = local.helm_default_timeout
 
   values = [
     <<-EOT
@@ -67,6 +68,8 @@ resource "helm_release" "ingress_nginx" {
           digest: ""
         service:
           type: ClusterIP
+        nodeSelector:
+          "purpose": "devops"
     EOT
   ]
 }
@@ -82,7 +85,7 @@ resource "helm_release" "harbor" {
   version          = var.harbor_version
   namespace        = "harbor"
   create_namespace = true
-  timeout          = 300
+  timeout          = local.helm_default_timeout
 
   values = [
     <<-EOT
@@ -102,6 +105,9 @@ resource "helm_release" "harbor" {
             nginx.ingress.kubernetes.io/proxy-body-size: "0"
       externalURL: "https://${var.harbor_url}"
       harborAdminPassword: "${var.harbor_password}"
+
+      nodeSelector:
+        "purpose": "devops"
 
       ### PVC settings
       persistence:
@@ -138,5 +144,42 @@ resource "helm_release" "harbor" {
             cpu: "200m"
     EOT
   ]
+}
 
+### Grafana & Loki Stack
+resource "helm_release" "loki_stack" {
+  depends_on = [kubernetes_storage_class.cfs_shared]
+
+  name       = "loki-stack"
+  repository = "https://grafana.github.io/helm-charts"
+  chart      = "loki-stack"
+  version    = "2.10.0"
+  namespace  = "loki"
+  create_namespace = true
+  timeout    = local.helm_default_timeout
+
+  values = [
+    <<-EOT
+      loki:
+        persistence:
+          enabled: true
+          storageClassName: "${local.storage_class_name}"
+          size: 50Gi
+        config:
+          table_manager:
+            retention_period: 168h
+        nodeSelector:
+          "purpose": "devops"
+
+      promtail:
+        enabled: true
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 256Mi
+            cpu: 200m
+    EOT
+  ]
 }
