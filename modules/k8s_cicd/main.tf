@@ -67,6 +67,8 @@ resource "helm_release" "ingress_nginx" {
           digest: ""
         service:
           type: ClusterIP
+        nodeSelector:
+          "purpose": "devops"
     EOT
   ]
 }
@@ -102,6 +104,9 @@ resource "helm_release" "harbor" {
             nginx.ingress.kubernetes.io/proxy-body-size: "0"
       externalURL: "https://${var.harbor_url}"
       harborAdminPassword: "${var.harbor_password}"
+
+      nodeSelector:
+        "purpose": "devops"
 
       ### PVC settings
       persistence:
