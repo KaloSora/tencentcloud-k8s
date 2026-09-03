@@ -12,4 +12,8 @@ module "k8s_cicd" {
   harbor_version = var.helm_harbor_version
   harbor_url = var.helm_harbor_url
   harbor_password = var.helm_harbor_password
+  loki_version = var.helm_loki_version
+  grafana_version = var.helm_grafana_version
+  grafana_url = var.helm_grafana_url
+  grafana_password = var.helm_grafana_password
 }

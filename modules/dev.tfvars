@@ -46,4 +46,7 @@ helm_ingress_nginx_version = "4.11.5"
 helm_harbor_version = "1.19.2"
 helm_harbor_url = "harbor.core.com"
 helm_harbor_password = "Harbor12345"
-
+helm_loki_version = "2.10.0"
+helm_grafana_version = "2.10.0"
+helm_grafana_url = "grafana.core.com"
+helm_grafana_password = "Grafana12345"

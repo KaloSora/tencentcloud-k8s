@@ -1,6 +1,6 @@
 locals {
   storage_class_name = "cfs-shared-storageclass"
-  helm_default_timeout = 300
+  helm_default_timeout = 600
 }
 
 ### K8s storageClass with CFS CSI provider
@@ -75,76 +75,77 @@ resource "helm_release" "ingress_nginx" {
 }
 
 ### Harbor 
-resource "helm_release" "harbor" {
+### Temporarily disable harbor helm chart installation for testing
+# resource "helm_release" "harbor" {
 
-  depends_on = [helm_release.ingress_nginx, kubernetes_storage_class.cfs_shared]
+#   depends_on = [helm_release.ingress_nginx, kubernetes_storage_class.cfs_shared]
 
-  name             = "harbor"
-  repository       = "https://helm.goharbor.io"
-  chart            = "harbor"
-  version          = var.harbor_version
-  namespace        = "harbor"
-  create_namespace = true
-  timeout          = local.helm_default_timeout
+#   name             = "harbor"
+#   repository       = "https://helm.goharbor.io"
+#   chart            = "harbor"
+#   version          = var.harbor_version
+#   namespace        = "harbor"
+#   create_namespace = true
+#   timeout          = local.helm_default_timeout
 
-  values = [
-    <<-EOT
-      expose:
-        type: ingress
-        tls:
-          enabled: true
-          certSource: "auto"
-          secret:
-            secretName: "harbor-tls"
-        ingress:
-          className: "nginx"
-          hosts:
-            core: "${var.harbor_url}"
-          annotations:
-            nginx.ingress.kubernetes.io/ssl-redirect: "true"
-            nginx.ingress.kubernetes.io/proxy-body-size: "0"
-      externalURL: "https://${var.harbor_url}"
-      harborAdminPassword: "${var.harbor_password}"
+#   values = [
+#     <<-EOT
+#       expose:
+#         type: ingress
+#         tls:
+#           enabled: true
+#           certSource: "auto"
+#           secret:
+#             secretName: "harbor-tls"
+#         ingress:
+#           className: "nginx"
+#           hosts:
+#             core: "${var.harbor_url}"
+#           annotations:
+#             nginx.ingress.kubernetes.io/ssl-redirect: "true"
+#             nginx.ingress.kubernetes.io/proxy-body-size: "0"
+#       externalURL: "https://${var.harbor_url}"
+#       harborAdminPassword: "${var.harbor_password}"
 
-      nodeSelector:
-        "purpose": "devops"
+#       nodeSelector:
+#         "purpose": "devops"
 
-      ### PVC settings
-      persistence:
-        enabled: true
-        resourcePolicy: "delete"
-        persistentVolumeClaim:
-          registry:
-            storageClass: "${local.storage_class_name}"
-            size: "100Gi"
-          jobservice:
-            jobLog:
-              storageClass: "${local.storage_class_name}"
-              size: "1Gi"
-          trivy:
-            storageClass: "${local.storage_class_name}"
-            size: "5Gi"
-          database:
-            storageClass: "${local.storage_class_name}"
-            size: "10Gi"
-          redis:
-            storageClass: "${local.storage_class_name}"
-            size: "5Gi"
+#       ### PVC settings
+#       persistence:
+#         enabled: true
+#         resourcePolicy: "delete"
+#         persistentVolumeClaim:
+#           registry:
+#             storageClass: "${local.storage_class_name}"
+#             size: "100Gi"
+#           jobservice:
+#             jobLog:
+#               storageClass: "${local.storage_class_name}"
+#               size: "1Gi"
+#           trivy:
+#             storageClass: "${local.storage_class_name}"
+#             size: "5Gi"
+#           database:
+#             storageClass: "${local.storage_class_name}"
+#             size: "10Gi"
+#           redis:
+#             storageClass: "${local.storage_class_name}"
+#             size: "5Gi"
 
-      ### Resource limit
-      core:
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-      registry:
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "200m"
-    EOT
-  ]
-}
+#       ### Resource limit
+#       core:
+#         resources:
+#           requests:
+#             memory: "512Mi"
+#             cpu: "500m"
+#       registry:
+#         resources:
+#           requests:
+#             memory: "256Mi"
+#             cpu: "200m"
+#     EOT
+#   ]
+# }
 
 ### Grafana & Loki Stack
 resource "helm_release" "loki_stack" {
@@ -153,8 +154,8 @@ resource "helm_release" "loki_stack" {
   name       = "loki-stack"
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki-stack"
-  version    = "2.10.0"
-  namespace  = "loki"
+  version    = var.loki_version
+  namespace  = "grafana-loki"
   create_namespace = true
   timeout    = local.helm_default_timeout
 
@@ -180,6 +181,55 @@ resource "helm_release" "loki_stack" {
           limits:
             memory: 256Mi
             cpu: 200m
+    EOT
+  ]
+}
+
+resource "helm_release" "grafana" {
+  depends_on = [
+    helm_release.ingress_nginx,
+    kubernetes_storage_class.cfs_shared
+  ]
+
+  name       = "grafana"
+  repository = "https://grafana.github.io/helm-charts"
+  chart      = "grafana"
+  version    = var.grafana_version
+  namespace  = "grafana-monitor"
+  create_namespace = true
+  timeout    = local.helm_default_timeout
+
+  values = [
+    <<-EOT
+      persistence:
+        enabled: true
+        storageClassName: "${local.storage_class_name}"
+        size: 10Gi
+
+      service:
+        type: ClusterIP
+        port: 80
+
+      adminPassword: "${var.grafana_password}"
+
+      nodeSelector:
+        "purpose": "devops"
+
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - "${var.grafana_url}"
+        path: /
+        pathType: Prefix
+
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 200m
     EOT
   ]
 }
