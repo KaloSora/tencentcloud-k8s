@@ -57,3 +57,23 @@ variable "harbor_password" {
   type = string
   description = "Harbor admin password"
 }
+
+variable "loki_version" {
+  type = string
+  description = "Loki version"
+}
+
+variable "grafana_version" {
+  type = string
+  description = "Grafana version"
+}
+
+variable "grafana_url" {
+  type = string
+  description = "Grafana URL"
+}
+
+variable "grafana_password" {
+  type = string
+  description = "Grafana admin password"
+}

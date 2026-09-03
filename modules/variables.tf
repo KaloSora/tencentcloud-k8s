@@ -155,3 +155,23 @@ variable "k8s_kubeconfig_path" {
   type = string
   description = "Path to the kubeconfig file"
 }
+
+variable "helm_loki_version" {
+  type = string
+  description = "Loki version"
+}
+
+variable "helm_grafana_version" {
+  type = string
+  description = "Grafana version"
+}
+
+variable "helm_grafana_url" {
+  type = string
+  description = "Grafana URL"
+}
+
+variable "helm_grafana_password" {
+  type = string
+  description = "Grafana admin password"
+}
