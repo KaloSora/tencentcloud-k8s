@@ -230,6 +230,18 @@ resource "helm_release" "grafana" {
         limits:
           memory: 1536Mi
           cpu: "1"
+
+      datasources:
+        datasources.yaml:
+          apiVersion: 1
+          datasources:
+          - name: Loki
+            type: loki
+            url: http://loki-stack.grafana-loki.svc.cluster.local:3100
+            access: proxy
+            isDefault: false
+            jsonData:
+              queryLanguage: "LogQL"
     EOT
   ]
 }
