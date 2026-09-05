@@ -179,8 +179,8 @@ resource "helm_release" "loki_stack" {
             memory: 128Mi
             cpu: 100m
           limits:
-            memory: 256Mi
-            cpu: 200m
+            memory: 512Mi
+            cpu: 300m
     EOT
   ]
 }
@@ -225,11 +225,11 @@ resource "helm_release" "grafana" {
 
       resources:
         requests:
-          memory: 256Mi
-          cpu: 100m
-        limits:
           memory: 512Mi
           cpu: 200m
+        limits:
+          memory: 1536Mi
+          cpu: "1"
     EOT
   ]
 }
