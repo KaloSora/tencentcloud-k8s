@@ -1,79 +1,26 @@
 locals {
-  storage_class_name = "cfs-shared-storageclass"
-  helm_default_timeout = 900
-  monitoring_namespace = "monitoring"
+  helm_default_timeout = 600
 }
 
-# resource "tencentcloud_clb_instance" "k8s_clb" {
-#   clb_name = "my-pay-as-you-go-clb"
-#   network_type = "OPEN"
-#   # charge_type = "POSTPAID_BY_HOUR"
-#   internet_charge_type = "TRAFFIC_POSTPAID_BY_HOUR"
-#   internet_bandwidth_max_out = 10
-#   vpc_id    = var.vpc_id
-#   subnet_id = var.subnet_id
-# }
 
-### Set ingress-nginx service type to ClusterIP
-### This is to avoid the issue of LoadBalancer service type to pending status and stuck terraform provider
-### Health check: http://NodeIP:10254/healthz
-resource "helm_release" "ingress_nginx" {
+### Harbor
+resource "helm_release" "harbor" {
 
-  name             = "ingress-nginx"
-  namespace        = "ingress-nginx"
+  name             = "harbor"
+  repository       = "https://helm.goharbor.io"
+  chart            = "harbor"
+  version          = var.harbor_version
+  namespace        = "harbor"
   create_namespace = true
-  repository       = "https://kubernetes.github.io/ingress-nginx"
-  chart            = "ingress-nginx"
-  version          = var.ingress_nginx_version
   timeout          = local.helm_default_timeout
 
   values = [
-    file("${path.module}/helm_values/ingress-nginx.yaml")
-  ]
-}
-
-### Harbor 
-### Temporarily disable harbor helm chart installation for testing
-# resource "helm_release" "harbor" {
-
-#   depends_on = [helm_release.ingress_nginx, kubernetes_storage_class.cfs_shared]
-
-#   name             = "harbor"
-#   repository       = "https://helm.goharbor.io"
-#   chart            = "harbor"
-#   version          = var.harbor_version
-#   namespace        = "harbor"
-#   create_namespace = true
-#   timeout          = local.helm_default_timeout
-
-#   values = [
-#     templatefile(
-#       "${path.module}/helm_values/harbor.yaml", 
-#       {
-#         harbor_url     = var.harbor_url
-#         harbor_password = var.harbor_password
-#         storage_class  = local.storage_class_name
-#       }
-#     )
-#   ]
-# }
-
-### Grafana & Loki Stack
-resource "helm_release" "loki_stack" {
-
-  name       = "loki"
-  repository = "https://grafana.github.io/helm-charts"
-  chart      = "loki-stack"
-  version    = var.loki_version
-  namespace  = local.monitoring_namespace
-  create_namespace = true
-  timeout    = local.helm_default_timeout
-
-  values = [
     templatefile(
-      "${path.module}/helm_values/loki.yaml",
+      "${path.module}/helm_values/harbor.yaml", 
       {
-        storage_class_name = local.storage_class_name
+        harbor_url     = var.harbor_url
+        harbor_password = var.harbor_password
+        storage_class  = var.storage_class_name
       }
     )
   ]
@@ -141,32 +88,4 @@ resource "helm_release" "loki_stack" {
 #   ]
 # }
 
-### kube-prometheus-stack
-resource "helm_release" "kube_prometheus_stack" {
-  name       = "kube-prometheus-stack"
-  repository = "https://prometheus-community.github.io/helm-charts"
-  chart      = "kube-prometheus-stack"
-  version    = var.kube_prometheus_stack_version
 
-  namespace        = local.monitoring_namespace
-  create_namespace = true
-
-  timeout = local.helm_default_timeout
-
-  depends_on = [
-    kubernetes_storage_class.cfs_shared,
-    helm_release.ingress_nginx
-  ]
-
-    values = [
-    templatefile(
-      "${path.module}/helm_values/kube_prometheus_stack.yaml",
-      {
-        storage_class_name = local.storage_class_name
-        grafana_password = var.grafana_password
-        grafana_url = var.grafana_url
-        monitoring_namespace = local.monitoring_namespace
-      }
-    )
-  ]
-}
