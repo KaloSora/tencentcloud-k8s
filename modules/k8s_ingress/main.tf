@@ -25,6 +25,8 @@ resource "helm_release" "ingress_nginx" {
   version          = var.ingress_nginx_version
   timeout          = local.helm_default_timeout
 
+  wait             = true # Wait until all resources are in a ready state before marking the release as successful
+
   values = [
     file("${path.module}/helm_values/ingress-nginx.yaml")
   ]
