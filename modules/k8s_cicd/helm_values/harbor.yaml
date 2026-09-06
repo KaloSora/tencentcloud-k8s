@@ -1,0 +1,55 @@
+expose:
+  type: ingress
+  tls:
+    enabled: true
+    certSource: "auto"
+    secret:
+      secretName: "harbor-tls"
+  ingress:
+    className: "nginx"
+    hosts:
+      core: "${harbor_url}"
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+
+externalURL: "https://${harbor_url}"
+
+harborAdminPassword: "${harbor_password}"
+
+nodeSelector:
+  purpose: "devops"
+
+### PVC settings
+persistence:
+  enabled: true
+  resourcePolicy: "delete"
+  persistentVolumeClaim:
+    registry:
+      storageClass: "${storage_class}"
+      size: "100Gi"
+    jobservice:
+      jobLog:
+        storageClass: "${storage_class}"
+        size: "1Gi"
+    trivy:
+      storageClass: "${storage_class}"
+      size: "5Gi"
+    database:
+      storageClass: "${storage_class}"
+      size: "10Gi"
+    redis:
+      storageClass: "${storage_class}"
+      size: "5Gi"
+
+### Resource limit
+core:
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+registry:
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"

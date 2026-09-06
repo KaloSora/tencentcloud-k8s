@@ -1,0 +1,15 @@
+controller:
+  healthCheck:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  kind: DaemonSet
+  ingressClassResource:
+    default: true
+  image:
+    digest: ""
+  service:
+    type: ClusterIP
+  nodeSelector:
+    purpose: devops

@@ -175,3 +175,8 @@ variable "helm_grafana_password" {
   type = string
   description = "Grafana admin password"
 }
+
+variable "helm_kube_prometheus_stack_version" {
+  description = "kube-prometheus-stack Helm chart version"
+  type        = string
+}

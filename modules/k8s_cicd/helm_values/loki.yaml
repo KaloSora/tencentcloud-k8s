@@ -1,0 +1,18 @@
+grafana:
+  enabled: false
+
+prometheus:
+  enabled: false
+
+loki:
+  enabled: true
+
+  persistence:
+    enabled: true
+    storageClassName: "${storage_class_name}"
+    accessModes:
+      - ReadWriteOnce
+    size: 50Gi
+
+promtail:
+  enabled: true
