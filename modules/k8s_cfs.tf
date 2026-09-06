@@ -5,4 +5,5 @@ module "k8s_cfs" {
   subnet_id = var.subnet_id
   cfs_cidr = var.cfs_allow_cidr
   cfs_storage_class_name = var.cfs_storage_class_name
+  kubeconfig_path = var.k8s_kubeconfig_path
 }

@@ -175,10 +175,10 @@ run_step "5/6 - Deploy Monitoring Framework" \
 # ------------------------------------------------------------
 
 run_step "6/6 - Deploy Kubernetes CICD" \
-    terraform apply \
-    -target=module.k8s_cicd \
-    -var-file="${TF_VAR_FILE}" \
-    -auto-approve
+    # terraform apply \
+    # -target=module.k8s_cicd \
+    # -var-file="${TF_VAR_FILE}" \
+    # -auto-approve
 
 # ------------------------------------------------------------
 # Final State
