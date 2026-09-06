@@ -4,31 +4,6 @@ locals {
   monitoring_namespace = "monitoring"
 }
 
-### K8s storageClass with CFS CSI provider
-resource "kubernetes_storage_class" "cfs_shared" {
-  metadata {
-    name = local.storage_class_name
-  }
-
-  storage_provisioner = "com.tencent.cloud.csi.cfs"
-  reclaim_policy      = "Delete"
-  volume_binding_mode = "Immediate"
-
-  mount_options = [
-    "vers=3",
-    "nolock",
-    "proto=tcp",
-    "noresvport"
-  ]
-
-  parameters = {
-    vpcId       = var.vpc_id
-    subnetId    = var.subnet_id
-    storageType = "SD"
-    pgroupid    = var.cfs_pgroup_id
-  }
-}
-
 # resource "tencentcloud_clb_instance" "k8s_clb" {
 #   clb_name = "my-pay-as-you-go-clb"
 #   network_type = "OPEN"
@@ -43,8 +18,6 @@ resource "kubernetes_storage_class" "cfs_shared" {
 ### This is to avoid the issue of LoadBalancer service type to pending status and stuck terraform provider
 ### Health check: http://NodeIP:10254/healthz
 resource "helm_release" "ingress_nginx" {
-  
-  depends_on = [kubernetes_storage_class.cfs_shared]
 
   name             = "ingress-nginx"
   namespace        = "ingress-nginx"
@@ -87,7 +60,6 @@ resource "helm_release" "ingress_nginx" {
 
 ### Grafana & Loki Stack
 resource "helm_release" "loki_stack" {
-  depends_on = [kubernetes_storage_class.cfs_shared]
 
   name       = "loki"
   repository = "https://grafana.github.io/helm-charts"
