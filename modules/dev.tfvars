@@ -21,9 +21,9 @@ k8s_cluster = {
   "master1" = {instance_name = "k8s-master-1", cpu_core_count = 4, memory_size = 8, is_first_master = "true", tags = { "role" = "master", "purpose" = "master" }}
   "master2" = {instance_name = "k8s-master-2", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "master", "purpose" = "master" }}
   "master3" = {instance_name = "k8s-master-3", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "master", "purpose" = "master" }}
-  "node1" = {instance_name = "k8s-node-1", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "worker", "purpose" = "devops" }}
-  "node2" = {instance_name = "k8s-node-2", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "worker", "purpose" = "app" }}
-  "node3" = {instance_name = "k8s-node-3", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "worker", "purpose" = "app" }}
+  "node1" = {instance_name = "k8s-node-1", cpu_core_count = 8, memory_size = 16, is_first_master = "", tags = { "role" = "worker", "purpose" = "devops" }}
+  "node2" = {instance_name = "k8s-node-2", cpu_core_count = 8, memory_size = 16, is_first_master = "", tags = { "role" = "worker", "purpose" = "app" }}
+  "node3" = {instance_name = "k8s-node-3", cpu_core_count = 8, memory_size = 16, is_first_master = "", tags = { "role" = "worker", "purpose" = "app" }}
 }
 
 ### K8s config variables
@@ -40,6 +40,7 @@ k8s_kubeconfig_path = "/Users/yihui.li/YIHUI/github_workspace/tencentcloud-k8s/m
 cfs_enabled = true  # Set to true to enable CFS integration
 cfs_allow_cidr = "172.0.0.0/8" # CFS access group CIDR, align with VPC CIDR. Here using default VPC CIDR
 cfs_csi_secret = "cfs-csi-api-key" # Hardcode the value since it's defined in "csi-provisioner-cfsplugin-new.yaml"
+cfs_storage_class_name = "cfs-shared-storageclass"
 
 ### K8s CICD variables
 helm_ingress_nginx_version = "4.11.5"
@@ -47,6 +48,7 @@ helm_harbor_version = "1.19.2"
 helm_harbor_url = "harbor.core.com"
 helm_harbor_password = "Harbor12345"
 helm_loki_version = "2.10.0"
-helm_grafana_version = "2.10.0"
+helm_grafana_version = "8.6.0"
 helm_grafana_url = "grafana.core.com"
 helm_grafana_password = "Grafana12345"
+helm_kube_prometheus_stack_version = "88.6.1"

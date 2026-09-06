@@ -23,3 +23,13 @@ variable "cfs_cidr" {
   description = "CFS CIDR block"
   type        = string
 }
+
+variable "cfs_storage_class_name" {
+  description = "Name of the CFS storage class"
+  type        = string
+}
+
+variable "kubeconfig_path" {
+  description = "Path to the kubeconfig file for the Kubernetes cluster"
+  type        = string
+}

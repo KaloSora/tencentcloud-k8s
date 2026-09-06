@@ -1,0 +1,27 @@
+grafana:
+  # Grafana is managed by kube-prometheus-stack
+  enabled: false
+
+  # Do not create Grafana datasource ConfigMaps, otherwise it will conflict with the Grafana sidecar
+  sidecar:
+    datasources:
+      enabled: false
+
+prometheus:
+  # Prometheus is managed by kube-prometheus-stack
+  enabled: false
+
+loki:
+  enabled: true
+
+  persistence:
+    enabled: true
+    storageClassName: "${storage_class_name}"
+
+    accessModes:
+      - ReadWriteOnce
+
+    size: 50Gi
+
+promtail:
+  enabled: true

@@ -65,49 +65,6 @@ resource "tencentcloud_key_pair" "cvm-key" {
   public_key = tls_private_key.cvm_key.public_key_openssh
 }
 
-
-# Get availability zones
-data "tencentcloud_availability_zones_by_product" "default" {
-  product = "cvm"
-}
-
-# Get Ubuntu images
-data "tencentcloud_images" "ubuntu" {
-  image_type = ["PUBLIC_IMAGE"]
-  image_name_regex = var.cvm_os_regex
-}
-
-# Get availability instance types
-data "tencentcloud_instance_types" "cvm_type" {
-
-  for_each = local.final_k8s_cluster
-
-  # Filter instance family
-  filter {
-    name   = "instance-family"
-    values = ["S5"]
-  }
-
-  filter {
-    name   = "zone"
-    values = ["${var.cvm_availability_zone}"]
-  }
-
-  cpu_core_count = each.value.cpu_core_count
-  memory_size    = each.value.memory_size
-}
-
-# K8s cfs
-module "k8s_cfs" {
-  count = var.cvm_cfs_enabled ? 1 : 0
-  source = "../k8s_cfs"
-  availability_zone = var.cvm_availability_zone
-  vpc_id = var.vpc_id
-  subnet_id = var.subnet_id
-  cfs_enabled = var.cvm_cfs_enabled
-  cfs_cidr = var.cfs_cidr
-}
-
 # Create a k8s server
 resource "tencentcloud_instance" "k8s_server" {
 
