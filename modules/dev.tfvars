@@ -40,6 +40,7 @@ k8s_kubeconfig_path = "/Users/yihui.li/YIHUI/github_workspace/tencentcloud-k8s/m
 cfs_enabled = true  # Set to true to enable CFS integration
 cfs_allow_cidr = "172.0.0.0/8" # CFS access group CIDR, align with VPC CIDR. Here using default VPC CIDR
 cfs_csi_secret = "cfs-csi-api-key" # Hardcode the value since it's defined in "csi-provisioner-cfsplugin-new.yaml"
+cfs_storage_class_name = "cfs-shared-storageclass"
 
 ### K8s CICD variables
 helm_ingress_nginx_version = "4.11.5"

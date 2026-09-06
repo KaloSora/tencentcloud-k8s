@@ -180,3 +180,8 @@ variable "helm_kube_prometheus_stack_version" {
   description = "kube-prometheus-stack Helm chart version"
   type        = string
 }
+
+variable "cfs_storage_class_name" {
+  description = "Name of the CFS storage class"
+  type        = string
+}

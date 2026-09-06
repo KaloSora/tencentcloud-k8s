@@ -7,7 +7,7 @@ module "k8s_cicd" {
   cvm_login_user = var.cvm_login_user
   k8s_kubeconfig_path = var.k8s_kubeconfig_path
   k8s_master_public_ip = module.k8s_cvm.master_public_ip
-  cfs_pgroup_id = module.k8s_cvm.cfs_pgroup_id
+  cfs_pgroup_id = module.k8s_cfs.cfs_access_group_id
   ingress_nginx_version = var.helm_ingress_nginx_version
   harbor_version = var.helm_harbor_version
   harbor_url = var.helm_harbor_url

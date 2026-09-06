@@ -23,3 +23,8 @@ variable "cfs_cidr" {
   description = "CFS CIDR block"
   type        = string
 }
+
+variable "cfs_storage_class_name" {
+  description = "Name of the CFS storage class"
+  type        = string
+}

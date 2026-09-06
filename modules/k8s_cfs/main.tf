@@ -14,17 +14,27 @@ resource "tencentcloud_cfs_access_rule" "k8s_cfs_rule" {
   user_permission = "no_all_squash"
 }
 
-# Remove this part since we are using the CFS CSI driver to manage CFS file systems dynamically, 
-# Instead of creating a static CFS file system in Terraform. The CFS CSI driver will handle the creation and management of CFS file systems as needed by the K8s cluster.
-# Create standard CFS file system
-# resource "tencentcloud_cfs_file_system" "k8s_cfs" {
-#   count = var.cfs_enabled ? 1 : 0
-  
-#   name              = "k8s-nfs-shared-storage"
-#   availability_zone = var.availability_zone
-#   access_group_id   = tencentcloud_cfs_access_group.k8s_cfs_ag.id
-#   storage_type      = "SD" # SD / HP
-#   protocol          = "NFS"
-#   vpc_id            = var.vpc_id
-#   subnet_id         = var.subnet_id
-# }
+resource "kubernetes_storage_class" "cfs_shared" {
+
+  metadata {
+    name = var.cfs_storage_class_name
+  }
+
+  storage_provisioner = "com.tencent.cloud.csi.cfs"
+  reclaim_policy      = "Delete"
+  volume_binding_mode = "Immediate"
+
+  mount_options = [
+    "vers=3",
+    "nolock",
+    "proto=tcp",
+    "noresvport"
+  ]
+
+  parameters = {
+    vpcId       = var.vpc_id
+    subnetId    = var.subnet_id
+    storageType = "SD"
+    pgroupid    = tencentcloud_cfs_access_group.k8s_cfs_ag.id
+  }
+}

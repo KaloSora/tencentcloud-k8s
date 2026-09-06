@@ -62,4 +62,5 @@ kubectl get ns
 | :------- | :---: | ----: |
 | 1     | terraform init -backend-config="YOUR_BUCKET" | To deploy K8s on CVM  |
 | 2     | terraform apply -target=module.k8s_cvm -var-file="dev.tfvars"   | To deploy K8s on CVM |
-| 3     | terraform apply -target=module.k8s_cicd -var-file="dev.tfvars"   | To deploy K8s CICD to CVM K8s  |
+| 3     | terraform apply -target=module.k8s_cfs -var-file="dev.tfvars"   | To create k8s storage with CFS CSI |
+| 4     | terraform apply -target=module.k8s_cicd -var-file="dev.tfvars"   | To deploy K8s CICD to CVM K8s  |
