@@ -43,29 +43,36 @@ resource "kubernetes_storage_class" "cfs_shared" {
 ### Add PVC cleanup resource to release CFS resources when destroying the cluster
 resource "terraform_data" "cfs_pvc_cleanup" {
 
+  input = {
+    kube_config   = var.kubeconfig_path
+    storage_class = var.cfs_storage_class_name
+    timeout       = 300
+    interval      = 10
+  }
+
+  # Will destroy all PVCs before destroying the storage class
+  depends_on = [
+    kubernetes_storage_class.cfs_shared
+  ]
+
   provisioner "local-exec" {
     when = destroy
 
     environment = {
-      KUBE_CONFIG   = var.kubeconfig_path
-      STORAGE_CLASS = var.cfs_storage_class_name
+      KUBE_CONFIG   = self.input.kube_config
+      STORAGE_CLASS = self.input.storage_class
+      TIMEOUT       = self.input.timeout
+      INTERVAL      = self.input.interval
     }
 
     command = <<-EOT
       set -Eeuo pipefail
 
+      export KUBECONFIG="$KUBE_CONFIG"
+
       echo "============================================================"
       echo "CFS PVC Cleanup"
       echo "============================================================"
-
-      export KUBECONFIG="$KUBE_CONFIG"
-
-      echo "Kubeconfig : $KUBE_CONFIG"
-      echo "StorageClass: $STORAGE_CLASS"
-
-      # --------------------------------------------------------
-      # Pre-check
-      # --------------------------------------------------------
 
       if ! command -v kubectl >/dev/null 2>&1; then
         echo "[ERROR] kubectl command not found"
@@ -82,49 +89,24 @@ resource "terraform_data" "cfs_pvc_cleanup" {
         exit 1
       fi
 
-      # ------------------------------------------------------
-      # Delete PVCs
-      # ------------------------------------------------------
-      kubectl delete pvc --all
+      echo ">>> Deleting PVCs using StorageClass: $STORAGE_CLASS"
 
-      # --------------------------------------------------------
-      # Wait for PV cleanup
-      # --------------------------------------------------------
-      echo
-      echo ">>> Waiting for PV cleanup..."
-
-      elapsed=0
-
-      while [ "$elapsed" -lt "$timeout" ]; do
-
-        PV_COUNT="$(
-          kubectl get pv \
-            -o jsonpath='{range .items[*]}{.spec.storageClassName}{"\n"}{end}' \
-            | grep -Fx "$STORAGE_CLASS" \
-            | wc -l \
-            | tr -d ' '
-        )"
-
-        if [ "$PV_COUNT" -eq 0 ]; then
-          echo "[PASS] All CFS PVs have been deleted."
-          break
-        fi
-
-        echo "[WAIT] $PV_COUNT CFS PV(s) still exist."
-
-        sleep "$interval"
-        elapsed=$((elapsed + interval))
-      done
-
-      if [ "$PV_COUNT" -ne 0 ]; then
-        echo
-        echo "[ERROR] CFS PV cleanup timed out after ${timeout}s."
-        kubectl get pv
-        exit 1
-      fi
+      kubectl get pvc \
+        --all-namespaces \
+        -o jsonpath='{range .items[?(@.spec.storageClassName=="'$STORAGE_CLASS'")]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' \
+        | while read -r namespace pvc; do
+            if [ -n "$namespace" ] && [ -n "$pvc" ]; then
+              echo "[DELETE] PVC $namespace/$pvc"
+              kubectl delete pvc "$pvc" \
+                -n "$namespace" \
+                --ignore-not-found
+            fi
+          done
 
       echo
-      echo "[PASS] CFS PVC/PV cleanup completed."
+      echo "[PASS] CFS PVC cleanup completed."
+      echo "PV and backend CFS resources will be reclaimed by the CSI driver."
+
     EOT
   }
 }

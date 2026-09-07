@@ -1,5 +1,5 @@
 locals {
-  helm_default_timeout = 600
+  helm_default_timeout = 900
   monitoring_namespace = "monitoring"
 }
 
