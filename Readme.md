@@ -66,3 +66,12 @@ kubectl get ns
 | 4     | terraform apply -target=module.k8s_ingress -var-file="dev.tfvars"   | To deploy ingress-nginx on K8s cluster  |
 | 5     | terraform apply -target=module.k8s_monitoring -var-file="dev.tfvars"   | To deploy monitoring framework on K8s cluster  |
 | 6     | terraform apply -target=module.k8s_cicd -var-file="dev.tfvars"   | To deploy K8s CICD on K8s cluster  |
+
+# One Click Script
+```
+# To create the whole infrastructure
+./script/create.sh
+
+# To destroy the whole infrastructure
+./script/destroy.sh
+```
