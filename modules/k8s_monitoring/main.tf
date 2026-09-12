@@ -1,6 +1,22 @@
 locals {
   helm_default_timeout = 900
   monitoring_namespace = "monitoring"
+  k8s_pss_version = "v${join(".", slice(split(".", var.k8s_version), 0, 2))}"
+}
+
+### PSA configuration for monitoring
+resource "kubernetes_namespace" "monitoring_namespace" {
+  metadata {
+    name = local.monitoring_namespace
+
+    labels = {
+      "pod-security.kubernetes.io/audit" = "restricted"
+      "pod-security.kubernetes.io/audit-version" = local.k8s_pss_version
+
+      "pod-security.kubernetes.io/warn"  = "restricted"
+      "pod-security.kubernetes.io/warn-version"  = local.k8s_pss_version
+    }
+  }
 }
 
 ### Grafana & Loki Stack
@@ -10,8 +26,8 @@ resource "helm_release" "loki_stack" {
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki-stack"
   version    = var.loki_version
-  namespace  = local.monitoring_namespace
-  create_namespace = true
+  namespace  = kubernetes_namespace.monitoring_namespace.metadata[0].name
+  create_namespace = false
   timeout    = local.helm_default_timeout
 
   values = [
@@ -31,8 +47,8 @@ resource "helm_release" "kube_prometheus_stack" {
   chart      = "kube-prometheus-stack"
   version    = var.kube_prometheus_stack_version
 
-  namespace        = local.monitoring_namespace
-  create_namespace = true
+  namespace        = kubernetes_namespace.monitoring_namespace.metadata[0].name
+  create_namespace = false
 
   timeout = local.helm_default_timeout
 

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Import tencentcloud secret key
+source ~/tencentcloud_env.sh
+
 set -Eeuo pipefail
 
 # ============================================================

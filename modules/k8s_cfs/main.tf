@@ -103,6 +103,8 @@ resource "terraform_data" "cfs_pvc_cleanup" {
             fi
           done
 
+      sleep 30
+
       echo
       echo "[PASS] CFS PVC cleanup completed."
       echo "PV and backend CFS resources will be reclaimed by the CSI driver."

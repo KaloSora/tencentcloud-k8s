@@ -17,3 +17,8 @@ variable "storage_class_name" {
   description = "Storage class name for persistent volumes"
   type        = string
 }
+
+variable "k8s_version" {
+  type = string
+  description = "Kubernetes version"
+}
