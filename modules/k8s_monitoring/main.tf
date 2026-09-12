@@ -19,8 +19,60 @@ resource "kubernetes_namespace" "monitoring_namespace" {
   }
 }
 
+### Resource Quota for monitoring namespace
+resource "kubernetes_resource_quota" "monitoring_quota" {
+
+  metadata {
+    name      = "monitoring-quota"
+    namespace = kubernetes_namespace.monitoring_namespace.metadata[0].name
+  }
+
+  spec {
+    hard = {
+      "requests.cpu"    = "6"
+      "requests.memory" = "10Gi"
+      "limits.cpu"      = "12"
+      "limits.memory"   = "20Gi"
+
+      "pods"                   = "60"
+      "persistentvolumeclaims" = "10"
+
+      "requests.storage" = "500Gi"
+      "${var.storage_class_name}.storageclass.storage.k8s.io/requests.storage" = "500Gi"
+    }
+  }
+}
+
+resource "kubernetes_limit_range" "monitoring" {
+  metadata {
+    name      = "monitoring-defaults"
+    namespace = kubernetes_namespace.monitoring_namespace.metadata[0].name
+  }
+
+  spec {
+    limit {
+      type = "Container"
+
+      default = {
+        cpu    = "500m"
+        memory = "512Mi"
+      }
+
+      default_request = {
+        cpu    = "50m"
+        memory = "64Mi"
+      }
+    }
+  }
+}
+
 ### Grafana & Loki Stack
 resource "helm_release" "loki_stack" {
+
+  depends_on = [
+    kubernetes_resource_quota.monitoring_quota,
+    kubernetes_limit_range.monitoring
+  ]
 
   name       = "loki"
   repository = "https://grafana.github.io/helm-charts"
@@ -42,6 +94,9 @@ resource "helm_release" "loki_stack" {
 
 ### kube-prometheus-stack
 resource "helm_release" "kube_prometheus_stack" {
+
+  depends_on = [kubernetes_resource_quota.monitoring_quota]
+
   name       = "kube-prometheus-stack"
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"

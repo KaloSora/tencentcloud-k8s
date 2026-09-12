@@ -1,5 +1,28 @@
+# ============================================================
+# kube-prometheus-stack
+# Chart: 88.6.1
+# ============================================================
+
+
+# ============================================================
+# CRDs
+# ============================================================
+
 crds:
   enabled: true
+
+  # Keep disabled unless you explicitly need CRD upgrade jobs.
+  # If enabled later, resources are already defined below.
+  upgradeJob:
+    enabled: false
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
 
 # ============================================================
 # Prometheus Operator
@@ -8,6 +31,7 @@ crds:
 prometheusOperator:
   enabled: true
 
+  # Main Prometheus Operator container
   resources:
     requests:
       cpu: 100m
@@ -16,10 +40,75 @@ prometheusOperator:
       cpu: 500m
       memory: 512Mi
 
+  # ----------------------------------------------------------
+  # Prometheus Operator Admission Webhook
+  # ----------------------------------------------------------
+  admissionWebhooks:
+
+    enabled: true
+
+    # The patch Job creates/patches the webhook configuration.
+    # This is important when ResourceQuota is enabled.
+    patch:
+      enabled: true
+
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
+    # IMPORTANT:
+    # kube-prometheus-stack 88.6.1 does NOT expose
+    # createSecretJob.resources.
+    #
+    # Therefore do NOT add:
+    #
+    # createSecretJob:
+    #   resources: ...
+    #
+    # A namespace LimitRange is recommended to provide
+    # default resources for this Helm hook Job.
+
+    # The admission webhook deployment is disabled by default.
+    # If you enable it later, configure its resources here.
+    deployment:
+      enabled: false
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
+  # ----------------------------------------------------------
+  # Config Reloader
+  # ----------------------------------------------------------
+  #
+  # This resource configuration is used by Prometheus Operator
+  # generated Prometheus / Alertmanager workloads.
+  #
+  # It is especially important because ResourceQuota checks
+  # init-config-reloader and config-reloader containers too.
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  # ----------------------------------------------------------
+  # Scheduling
+  # ----------------------------------------------------------
+
   # nodeSelector:
   #   purpose: devops
 
-  # Prefer DevOps nodes, but allow scheduling on other nodes
   affinity:
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -43,13 +132,26 @@ prometheus:
     type: ClusterIP
 
   prometheusSpec:
+
     replicas: 1
+
+    # ----------------------------------------------------------
+    # Retention
+    # ----------------------------------------------------------
 
     retention: 15d
     retentionSize: "40GB"
 
+    # ----------------------------------------------------------
+    # Scraping
+    # ----------------------------------------------------------
+
     scrapeInterval: 30s
     evaluationInterval: 30s
+
+    # ----------------------------------------------------------
+    # Resources
+    # ----------------------------------------------------------
 
     resources:
       requests:
@@ -59,30 +161,45 @@ prometheus:
         cpu: "4"
         memory: 6Gi
 
+    # ----------------------------------------------------------
+    # Persistent Storage
+    # ----------------------------------------------------------
+
     storageSpec:
       volumeClaimTemplate:
         spec:
           storageClassName: "${storage_class_name}"
+
           accessModes:
             - ReadWriteOnce
+
           resources:
             requests:
               storage: 50Gi
 
-    ### Discover ServiceMonitors / PodMonitors across all namespaces
+    # ----------------------------------------------------------
+    # ServiceMonitor Discovery
+    # ----------------------------------------------------------
+
+    # Discover ServiceMonitors from all namespaces
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorNamespaceSelector: {}
 
+    # Discover PodMonitors from all namespaces
     podMonitorSelectorNilUsesHelmValues: false
     podMonitorNamespaceSelector: {}
 
+    # Discover PrometheusRules from all namespaces
     ruleSelectorNilUsesHelmValues: false
     ruleNamespaceSelector: {}
+
+    # ----------------------------------------------------------
+    # Scheduling
+    # ----------------------------------------------------------
 
     # nodeSelector:
     #   purpose: devops
 
-    # Prefer DevOps nodes, but allow scheduling on other nodes
     affinity:
       nodeAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -93,7 +210,6 @@ prometheus:
                   operator: In
                   values:
                     - devops
-  
 
 
 # ============================================================
@@ -105,6 +221,9 @@ alertmanager:
 
   alertmanagerSpec:
     replicas: 1
+    # ----------------------------------------------------------
+    # Resources
+    # ----------------------------------------------------------
 
     resources:
       requests:
@@ -114,20 +233,9 @@ alertmanager:
         cpu: "1"
         memory: 1Gi
 
-    # nodeSelector:
-    #   purpose: devops
-
-    # Prefer DevOps nodes, but allow scheduling on other nodes
-    affinity:
-      nodeAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            preference:
-              matchExpressions:
-                - key: purpose
-                  operator: In
-                  values:
-                    - devops
+    # ----------------------------------------------------------
+    # Persistent Storage
+    # ----------------------------------------------------------
 
     storage:
       volumeClaimTemplate:
@@ -159,17 +267,16 @@ kube-state-metrics:
   # nodeSelector:
   #   purpose: devops
 
-  # Prefer DevOps nodes, but allow scheduling on other nodes
   affinity:
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
-          preference:
-            matchExpressions:
-              - key: purpose
-                operator: In
-                values:
-                  - devops
+      preference:
+          matchExpressions:
+            - key: purpose
+              operator: In
+              values:
+                - devops
 
 
 # ============================================================
@@ -191,17 +298,16 @@ prometheus-node-exporter:
   # nodeSelector:
   #   purpose: devops
 
-  # Prefer DevOps nodes, but allow scheduling on other nodes
   affinity:
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
-          preference:
-            matchExpressions:
-              - key: purpose
-                operator: In
-                values:
-                  - devops
+      preference:
+          matchExpressions:
+            - key: purpose
+              operator: In
+              values:
+                - devops
 
 
 # ============================================================
@@ -232,6 +338,8 @@ coreDns:
 kubeProxy:
   enabled: true
 
+# These are disabled because your cluster does not expose
+# the corresponding control-plane metrics endpoints.
 kubeControllerManager:
   enabled: false
 
@@ -240,14 +348,14 @@ kubeScheduler:
 
 
 # ============================================================
-# Prometheus Rules
+# Default Prometheus Rules
 # ============================================================
 
 defaultRules:
   create: true
-
   rules:
     alertmanager: true
+    # etcd metrics are not enabled in this configuration
     etcd: false
     configReloaders: true
     general: true
@@ -279,9 +387,15 @@ defaultRules:
 grafana:
   enabled: true
 
+  # ----------------------------------------------------------
+  # Authentication
+  # ----------------------------------------------------------
   adminUser: admin
   adminPassword: "${grafana_password}"
 
+  # ----------------------------------------------------------
+  # Persistent Storage
+  # ----------------------------------------------------------
   persistence:
     enabled: true
     storageClassName: "${storage_class_name}"
@@ -289,6 +403,9 @@ grafana:
       - ReadWriteOnce
     size: 10Gi
 
+  # ----------------------------------------------------------
+  # Resources
+  # ----------------------------------------------------------
   resources:
     requests:
       cpu: 250m
@@ -297,10 +414,13 @@ grafana:
       cpu: "2"
       memory: 2Gi
 
+  # ----------------------------------------------------------
+  # Scheduling
+  # ----------------------------------------------------------
+
   # nodeSelector:
   #   purpose: devops
 
-  # Prefer DevOps nodes, but allow scheduling on other nodes
   affinity:
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -312,25 +432,35 @@ grafana:
                 values:
                   - devops
 
+  # ----------------------------------------------------------
+  # Service
+  # ----------------------------------------------------------
   service:
     type: ClusterIP
     port: 80
 
+  # ----------------------------------------------------------
+  # Ingress
+  # ----------------------------------------------------------
   ingress:
     enabled: true
     ingressClassName: nginx
-
     hosts:
       - "${grafana_url}"
-
     path: /
     pathType: Prefix
 
+  # ----------------------------------------------------------
+  # Default Dashboards
+  # ----------------------------------------------------------
   defaultDashboardsEnabled: true
   defaultDashboardsTimezone: utc
   defaultDashboardsEditable: true
   defaultDashboardsInterval: 30s
 
+  # ----------------------------------------------------------
+  # Loki Datasource
+  # ----------------------------------------------------------
   additionalDataSources:
     - name: Loki
       type: loki
