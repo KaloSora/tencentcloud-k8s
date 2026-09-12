@@ -1,5 +1,6 @@
 module "k8s_monitoring" {
   source = "./k8s_monitoring"
+  k8s_version = var.k8s_version
   loki_version = var.helm_loki_version
   grafana_version = var.helm_grafana_version
   grafana_url = var.helm_grafana_url

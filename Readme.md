@@ -1,7 +1,88 @@
 # Purpose
 This repository mainly use terraform to create vm and deploy k8s on tencent cloud.
 
-# Usage
+# Feature
+## Pod Security Standard
+This project applies Kubernetes Pod Security Standards (PSS) to enforce workload security and least-privilege principles.
+
+The cluster follows the Restricted security profile where applicable, with workload-level security controls implemented through `securityContext`.
+
+### Security Controls
+The following security controls are applied to Kubernetes workloads:
+- Run containers as a non-root user
+- Disable privilege escalation
+- Drop unnecessary Linux capabilities
+- Use the default RuntimeDefault seccomp profile
+- Use a read-only root filesystem where supported
+- Minimize container privileges according to the workload requirements
+
+Example:
+```YAML
+securityContext: 
+    runAsNonRoot: true 
+    runAsUser: 1000 
+    runAsGroup: 1000 
+    seccompProfile: 
+        type: RuntimeDefault 
+
+containers: 
+    - name: application 
+    securityContext: allow
+    PrivilegeEscalation: false 
+    readOnlyRootFilesystem: true 
+        capabilities: 
+        drop: - ALL
+```
+
+### Pod Security Admission
+Pod Security Admission (PSA) is used to enforce the Pod Security Standards at the namespace level.
+
+Example:
+```Terraform
+resource "kubernetes_namespace" "my_namespace" {
+  metadata {
+    name = local.my_namespace
+
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "restricted"
+      "pod-security.kubernetes.io/audit"   = "restricted"
+      "pod-security.kubernetes.io/warn"    = "restricted"
+    }
+  }
+}
+```
+
+The three PSA modes provide different levels of enforcement:
+
+| Mode | Purpose |
+| :------- | :---: |
+| enforce | Reject workloads that violate the policy |
+| audit	| Record policy violations in audit information |
+| warn	| Return warnings to users without rejecting the workload |
+
+### Ingress Security
+The ingress-nginx controller runs as a DaemonSet on dedicated DevOps nodes using hostNetwork for direct node-level traffic handling.
+
+The controller is hardened using:
+- Set `allowPrivilegeEscalation: false`: to restrict the ability of a process to gain more privileges than its parent process
+- Linux capability dropping: to drop all capabilities(like CAP_NET_ADMIN, CAP_SYS_ADMIN, CAP_SYS_PTRACE ... etc.) and only allow the ones that are explicitly added
+- Security Computing: to use the default seccomp profile for the container runtime to avoid dangerous syscall
+
+## Resource Limit
+Define CPU and memory `requests` and `limits` for workloads to improve resource allocation, scheduling, and workload isolation.
+
+For example:
+```YAML
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+```
+
+# Prerequisites
 Execute below command
 1. Install tencent cloud cli and input secret key/id
 ```bash
@@ -68,7 +149,7 @@ kubectl get ns
 | 6     | terraform apply -target=module.k8s_cicd -var-file="dev.tfvars"   | To deploy K8s CICD on K8s cluster  |
 
 # One Click Script
-```
+```bash
 # To create the whole infrastructure
 ./script/create.sh
 

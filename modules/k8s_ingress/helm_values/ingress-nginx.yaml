@@ -13,3 +13,12 @@ controller:
     type: ClusterIP
   nodeSelector:
     purpose: devops
+  ### Security hardening
+  # It will auto create CAP_NET_BIND_SERVICE after drop all capabilities
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
