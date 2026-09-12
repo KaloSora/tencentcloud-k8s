@@ -13,15 +13,27 @@ prometheus:
 
 loki:
   enabled: true
-
   persistence:
     enabled: true
     storageClassName: "${storage_class_name}"
-
     accessModes:
       - ReadWriteOnce
-
     size: 50Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 promtail:
   enabled: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
