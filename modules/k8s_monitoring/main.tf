@@ -43,7 +43,8 @@ resource "kubernetes_resource_quota" "monitoring_quota" {
   }
 }
 
-resource "kubernetes_limit_range" "monitoring" {
+# Set default resource quota for containers in the monitoring namespace
+resource "kubernetes_limit_range" "monitoring_default_quota" {
   metadata {
     name      = "monitoring-defaults"
     namespace = kubernetes_namespace.monitoring_namespace.metadata[0].name
@@ -71,7 +72,7 @@ resource "helm_release" "loki_stack" {
 
   depends_on = [
     kubernetes_resource_quota.monitoring_quota,
-    kubernetes_limit_range.monitoring
+    kubernetes_limit_range.monitoring_default_quota
   ]
 
   name       = "loki"
@@ -95,7 +96,10 @@ resource "helm_release" "loki_stack" {
 ### kube-prometheus-stack
 resource "helm_release" "kube_prometheus_stack" {
 
-  depends_on = [kubernetes_resource_quota.monitoring_quota]
+  depends_on = [
+    kubernetes_resource_quota.monitoring_quota, 
+    kubernetes_limit_range.monitoring_default_quota
+  ]
 
   name       = "kube-prometheus-stack"
   repository = "https://prometheus-community.github.io/helm-charts"
