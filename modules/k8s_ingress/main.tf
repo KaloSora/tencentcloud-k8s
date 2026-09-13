@@ -49,12 +49,39 @@ resource "kubernetes_resource_quota" "ingress_nginx_quota" {
   }
 }
 
+# Set default resource quota for containers in the monitoring namespace
+resource "kubernetes_limit_range" "ingress_nginx_limit_range" {
+  metadata {
+    name      = "ingress-nginx-limit-range"
+    namespace = kubernetes_namespace.ingress_nginx_namespace.metadata[0].name
+  }
+
+  spec {
+    limit {
+      type = "Container"
+
+      default = {
+        cpu    = "500m"
+        memory = "512Mi"
+      }
+
+      default_request = {
+        cpu    = "50m"
+        memory = "64Mi"
+      }
+    }
+  }
+}
+
 ### Set ingress-nginx service type to ClusterIP
 ### This is to avoid the issue of LoadBalancer service type to pending status and stuck terraform provider
 ### Health check: http://NodeIP:10254/healthz
 resource "helm_release" "ingress_nginx" {
 
-  depends_on = [kubernetes_resource_quota.ingress_nginx_quota]
+  depends_on = [
+    kubernetes_resource_quota.ingress_nginx_quota, 
+    kubernetes_limit_range.ingress_nginx_limit_range
+  ]
 
   name             = "ingress-nginx"
   namespace        = kubernetes_namespace.ingress_nginx_namespace.metadata[0].name

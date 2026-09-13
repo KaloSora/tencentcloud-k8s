@@ -44,9 +44,9 @@ resource "kubernetes_resource_quota" "monitoring_quota" {
 }
 
 # Set default resource quota for containers in the monitoring namespace
-resource "kubernetes_limit_range" "monitoring_default_quota" {
+resource "kubernetes_limit_range" "monitoring_limit_range" {
   metadata {
-    name      = "monitoring-defaults"
+    name      = "monitoring-limit-range"
     namespace = kubernetes_namespace.monitoring_namespace.metadata[0].name
   }
 
@@ -72,7 +72,7 @@ resource "helm_release" "loki_stack" {
 
   depends_on = [
     kubernetes_resource_quota.monitoring_quota,
-    kubernetes_limit_range.monitoring_default_quota
+    kubernetes_limit_range.monitoring_limit_range
   ]
 
   name       = "loki"
@@ -98,7 +98,7 @@ resource "helm_release" "kube_prometheus_stack" {
 
   depends_on = [
     kubernetes_resource_quota.monitoring_quota, 
-    kubernetes_limit_range.monitoring_default_quota
+    kubernetes_limit_range.monitoring_limit_range
   ]
 
   name       = "kube-prometheus-stack"
