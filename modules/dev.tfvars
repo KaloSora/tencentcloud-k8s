@@ -22,7 +22,7 @@ k8s_cluster = {
   "master2" = {instance_name = "k8s-master-2", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "master", "purpose" = "master" }}
   "master3" = {instance_name = "k8s-master-3", cpu_core_count = 4, memory_size = 8, is_first_master = "", tags = { "role" = "master", "purpose" = "master" }}
   "node1" = {instance_name = "k8s-node-1", cpu_core_count = 8, memory_size = 16, is_first_master = "", tags = { "role" = "worker", "purpose" = "devops" }}
-  "node2" = {instance_name = "k8s-node-2", cpu_core_count = 8, memory_size = 16, is_first_master = "", tags = { "role" = "worker", "purpose" = "app" }}
+  "node2" = {instance_name = "k8s-node-2", cpu_core_count = 8, memory_size = 16, is_first_master = "", tags = { "role" = "worker", "purpose" = "devops" }}
   "node3" = {instance_name = "k8s-node-3", cpu_core_count = 8, memory_size = 16, is_first_master = "", tags = { "role" = "worker", "purpose" = "app" }}
 }
 

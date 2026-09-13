@@ -11,8 +11,49 @@ controller:
     digest: ""
   service:
     type: ClusterIP
-  nodeSelector:
-    purpose: devops
+  # nodeSelector:
+  #   purpose: devops
+
+  # Prefer DevOps nodes, but allow scheduling on other nodes
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: purpose
+                operator: In
+                values:
+                  - devops
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+      
+  # Admission webhook Jobs
+  admissionWebhooks:
+    createSecretJob:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
+    patchWebhookJob:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
   ### Security hardening
   # It will auto create CAP_NET_BIND_SERVICE after drop all capabilities
   securityContext:

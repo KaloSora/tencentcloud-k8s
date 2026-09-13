@@ -17,8 +17,20 @@ externalURL: "https://${harbor_url}"
 
 harborAdminPassword: "${harbor_password}"
 
-nodeSelector:
-  purpose: "devops"
+# nodeSelector:
+#   purpose: "devops"
+
+# Prefer DevOps nodes, but allow scheduling on other nodes
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: purpose
+              operator: In
+              values:
+                - devops
 
 ### PVC settings
 persistence:

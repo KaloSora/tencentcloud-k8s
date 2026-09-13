@@ -69,7 +69,12 @@ The controller is hardened using:
 - Security Computing: to use the default seccomp profile for the container runtime to avoid dangerous syscall
 
 ## Resource Limit
+Implement resource limit provides workload-level resource isolation and namespace-level resource governance.
+
 Define CPU and memory `requests` and `limits` for workloads to improve resource allocation, scheduling, and workload isolation.
+- `requests` define the amount of CPU and memory requested by a workload and are used by the Kubernetes scheduler for resource placement.
+- `limits` define the maximum amount of CPU and memory that a container can consume.
+- Resource limits help prevent individual workloads from consuming excessive resources and affecting other workloads.
 
 For example:
 ```YAML
@@ -81,6 +86,33 @@ For example:
       cpu: "2"
       memory: 2Gi
 ```
+
+### Resource Quota
+ResourceQuota defines the maximum aggregate resources that can be requested by a namespace. It does not pre-allocate or reserve the configured resources.
+Resource limits and quotas provide two levels of resource governance:
+
+For example:
+```Terraform
+resource "kubernetes_resource_quota" "ingress_nginx_quota" {
+  metadata {
+    name      = "ingress-nginx-quota"
+    namespace = kubernetes_namespace.ingress_nginx_namespace.metadata[0].name
+  }
+  spec {
+    hard = {
+      "requests.cpu"    = "1"
+      "requests.memory" = "512Mi"
+      "limits.cpu"      = "2"
+      "limits.memory"   = "2Gi"
+      "pods" = "10"
+    }
+  }
+}
+```
+
+### Limit Range
+Not all container will set resource.
+Use resource `kubernetes_limit_range` to set default resource limit to avoid `resource {}`.
 
 # Prerequisites
 Execute below command
