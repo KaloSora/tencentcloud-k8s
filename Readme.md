@@ -474,15 +474,16 @@ kubectl get ns
 ```
 
 ## Terraform Runbook
+Use `terraform apply -target=<module> -var-file="dev.tfvars"` to use Terraform variables
 
 | Step | Command | Description |
 | :--- | :--- | :--- |
 | 1 | `terraform init -backend-config="YOUR_BUCKET"` | Initialize Terraform backend |
-| 2 | `terraform apply -target=module.k8s_cvm -var-file="dev.tfvars"` | Deploy Kubernetes on CVM |
-| 3 | `terraform apply -target=module.k8s_cfs -var-file="dev.tfvars"` | Configure CFS CSI storage |
-| 4 | `terraform apply -target=module.k8s_ingress -var-file="dev.tfvars"` | Deploy ingress-nginx |
-| 5 | `terraform apply -target=module.k8s_monitoring -var-file="dev.tfvars"` | Deploy monitoring stack |
-| 6 | `terraform apply -target=module.k8s_cicd -var-file="dev.tfvars"` | Deploy CI/CD platform |
+| 2 | `terraform apply -target=module.k8s_cvm` | Deploy Kubernetes on CVM |
+| 3 | `terraform apply -target=module.k8s_cfs` | Configure CFS CSI storage |
+| 4 | `terraform apply -target=module.k8s_ingress` | Deploy ingress-nginx |
+| 5 | `terraform apply -target=module.k8s_monitoring` | Deploy monitoring stack |
+| 6 | `terraform apply -target=module.k8s_cicd` | Deploy CI/CD platform |
 
 ## One Click Script
 ### Create
