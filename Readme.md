@@ -1,7 +1,160 @@
-# Purpose
-This repository mainly use terraform to create vm and deploy k8s on tencent cloud.
 
-# Feature
+# Tencent Cloud Self-Hosted Kubernetes
+
+> A production-oriented self-hosted Kubernetes platform built on Tencent Cloud CVM using Terraform.
+
+This project provides a modular Kubernetes platform on Tencent Cloud, including:
+
+- Self-hosted Kubernetes cluster on CVM
+- Terraform-based infrastructure provisioning
+- Tencent Cloud CFS CSI dynamic storage
+- ingress-nginx
+- Prometheus, Grafana and Loki observability stack
+- Kubernetes CI/CD platform
+- Pod Security Standards and resource governance
+- etcd backup and disaster recovery
+- Automated infrastructure lifecycle management
+
+# Table of Contents
+
+- [Overview](#overview)
+  - [Purpose](#purpose)
+  - [Architecture](#architecture)
+
+- [Infrastructure](#infrastructure)
+  - [Terraform Modules](#terraform-modules)
+  - [Kubernetes Cluster](#kubernetes-cluster)
+  - [CFS CSI Storage](#cfs-csi-storage)
+    - [CFS CSI Components](#cfs-csi-components)
+    - [Architecture](#architecture-1)
+
+- [Networking](#networking)
+  - [Ingress](#ingress)
+
+- [Security](#security)
+  - [Pod Security Standards](#pod-security-standards)
+  - [Pod Security Admission](#pod-security-admission)
+  - [SecurityContext](#securitycontext)
+  - [Ingress Security](#ingress-security)
+  - [Resource Governance](#resource-governance)
+    - [Resource Requests and Limits](#resource-requests-and-limits)
+    - [Resource Quota](#resource-quota)
+    - [Limit Range](#limit-range)
+
+- [Observability](#observability)
+  - [Prometheus](#prometheus)
+  - [Grafana](#grafana)
+  - [Loki](#loki)
+  - [Synthetic Monitoring](#synthetic-monitoring)
+
+- [CI/CD](#cicd)
+
+- [Disaster Recovery](#disaster-recovery)
+  - [etcd Backup & Restore](#etcd-backup--restore)
+    - [Backup](#backup)
+    - [Restore](#restore)
+
+- [Deployment](#deployment)
+  - [Prerequisites](#prerequisites)
+  - [Terraform Runbook](#terraform-runbook)
+  - [One Click Script](#one-click-script)
+    - [Create](#create)
+    - [Destroy](#destroy)
+
+- [Project Structure](#project-structure)
+
+- [Troubleshooting](#troubleshooting)
+  - [Troubleshooting Workflow](#troubleshooting-workflow)
+  - [Terraform Kubernetes API Connection Timeout](#terraform-kubernetes-api-connection-timeout)
+    - [Symptom](#symptom)
+    - [Possible Causes](#possible-causes)
+    - [Troubleshooting](#troubleshooting-1)
+  - [Helm Deployment Timeout](#helm-deployment-timeout)
+    - [Symptom](#symptom-1)
+    - [Possible Causes](#possible-causes-1)
+    - [Troubleshooting](#troubleshooting-2)
+  - [CFS CSI / PVC Provisioning Issues](#cfs-csi--pvc-provisioning-issues)
+    - [Symptom](#symptom-2)
+    - [Possible Causes](#possible-causes-2)
+    - [Troubleshooting](#troubleshooting-3)
+
+# Overview
+
+## Purpose
+
+The purpose of this project is to build a modular and reproducible Kubernetes platform on Tencent Cloud.
+
+Terraform is used to provision the underlying CVM infrastructure and deploy Kubernetes platform components in a controlled and repeatable manner.
+
+The project focuses on:
+
+- Infrastructure as Code
+- Kubernetes platform engineering
+- Observability
+- Security hardening
+- Persistent storage
+- CI/CD
+- Disaster recovery
+- Automated lifecycle management
+
+## Architecture
+```text
+                        Tencent Cloud
+                             |
+              +--------------+--------------+
+              |                             |
+          VPC / Subnet                  COS Backend
+              |
+      +-------+-------+
+      |               |
+   Control Plane    Worker Nodes
+      |               |
+      +-------+-------+
+              |
+        Kubernetes
+              |
+    +---------+---------+
+    |         |         |
+   CFS     Ingress   Monitoring
+    |         |         |
+    |      nginx      |
+    |              Prometheus
+    |              Grafana
+    |              Loki
+    |
+ CFS CSI
+```
+
+# Infrastructure
+
+## Terraform Modules
+
+The infrastructure is organized into independent Terraform modules:
+
+| Module | Responsibility |
+|---|---|
+| `k8s_cvm` | Provision CVMs and bootstrap Kubernetes |
+| `k8s_cfs` | Configure Tencent Cloud CFS and Kubernetes StorageClass |
+| `k8s_ingress` | Deploy ingress-nginx |
+| `k8s_monitoring` | Deploy Prometheus, Grafana and Loki |
+| `k8s_cicd` | Deploy Kubernetes CI/CD components |
+
+This modular structure allows individual platform components to be deployed and managed independently.
+
+## Kubernetes Cluster
+
+The Kubernetes cluster is deployed on Tencent Cloud CVM.
+
+The `k8s_cvm` module is responsible for:
+
+- CVM provisioning
+- Kubernetes initialization
+- Container runtime configuration
+- Cluster networking
+- Kubernetes bootstrap
+- CFS CSI Driver installation
+- kubeconfig configuration
+
 ## CFS CSI Storage
 
 This project integrates the Tencent Cloud CFS CSI Driver to provide shared persistent storage for Kubernetes workloads.
@@ -24,40 +177,53 @@ The deployment consists of:
 
 The CSI components run in the kube-system namespace. The official Tencent Cloud documentation describes the controller as a StatefulSet and the node plugin as a DaemonSet.
 
-## Pod Security Standard
+### Architecture
+```text
+PVC
+  ↓
+StorageClass
+  ↓
+CFS CSI Driver
+  ↓
+Tencent Cloud CFS
+  ↓
+PV
+  ↓
+Pod
+```
+
+# Networking
+
+## Ingress
+
+The project uses ingress-nginx as the Kubernetes ingress controller.
+
+The ingress controller is deployed as a DaemonSet on dedicated DevOps nodes.
+
+Key configuration includes:
+
+- Dedicated node scheduling
+- `hostNetwork`
+- Default IngressClass
+- Health checks
+- Kubernetes securityContext
+
+# Security
+## Pod Security Standards
 This project applies Kubernetes Pod Security Standards (PSS) to enforce workload security and least-privilege principles.
 
 The cluster follows the Restricted security profile where applicable, with workload-level security controls implemented through `securityContext`.
 
-### Security Controls
-The following security controls are applied to Kubernetes workloads:
-- Run containers as a non-root user
-- Disable privilege escalation
-- Drop unnecessary Linux capabilities
-- Use the default RuntimeDefault seccomp profile
-- Use a read-only root filesystem where supported
-- Minimize container privileges according to the workload requirements
-
-Example:
-```YAML
-securityContext: 
-    runAsNonRoot: true 
-    runAsUser: 1000 
-    runAsGroup: 1000 
-    seccompProfile: 
-        type: RuntimeDefault 
-
-containers: 
-    - name: application 
-    securityContext: allow
-    PrivilegeEscalation: false 
-    readOnlyRootFilesystem: true 
-        capabilities: 
-        drop: - ALL
-```
-
-### Pod Security Admission
+## Pod Security Admission
 Pod Security Admission (PSA) is used to enforce the Pod Security Standards at the namespace level.
+
+The three PSA modes provide different levels of enforcement:
+
+| Mode | Purpose |
+| :------- | :---: |
+| enforce | Reject workloads that violate the policy |
+| audit	| Record policy violations in audit information |
+| warn	| Return warnings to users without rejecting the workload |
 
 Example:
 ```Terraform
@@ -74,23 +240,25 @@ resource "kubernetes_namespace" "my_namespace" {
 }
 ```
 
-The three PSA modes provide different levels of enforcement:
+## SecurityContext
 
-| Mode | Purpose |
-| :------- | :---: |
-| enforce | Reject workloads that violate the policy |
-| audit	| Record policy violations in audit information |
-| warn	| Return warnings to users without rejecting the workload |
+Workloads are configured with:
 
-### Ingress Security
-The ingress-nginx controller runs as a DaemonSet on dedicated DevOps nodes using hostNetwork for direct node-level traffic handling.
+- `runAsNonRoot`
+- `allowPrivilegeEscalation: false`
+- `seccompProfile: RuntimeDefault`
+- `readOnlyRootFilesystem`
+- Linux capabilities dropped where possible
 
-The controller is hardened using:
-- Set `allowPrivilegeEscalation: false`: to restrict the ability of a process to gain more privileges than its parent process
-- Linux capability dropping: to drop all capabilities(like CAP_NET_ADMIN, CAP_SYS_ADMIN, CAP_SYS_PTRACE ... etc.) and only allow the ones that are explicitly added
-- Security Computing: to use the default seccomp profile for the container runtime to avoid dangerous syscall
+## Ingress Security
+The ingress-nginx controller is hardened using:
 
-## Resource Limit
+- `allowPrivilegeEscalation: false`
+- Linux capability dropping
+- RuntimeDefault seccomp profile
+
+## Resource Governance
+### Resource Requests and Limits
 Implement resource limit provides workload-level resource isolation and namespace-level resource governance.
 
 Define CPU and memory `requests` and `limits` for workloads to improve resource allocation, scheduling, and workload isolation.
@@ -136,7 +304,118 @@ resource "kubernetes_resource_quota" "ingress_nginx_quota" {
 Not all container will set resource.
 Use resource `kubernetes_limit_range` to set default resource limit to avoid `resource {}`.
 
-# Prerequisites
+# Observability
+
+The monitoring stack provides metrics, dashboards and centralized logging for the Kubernetes platform.
+
+## Prometheus
+
+Prometheus is used for:
+
+- Kubernetes metrics
+- Node metrics
+- Application metrics
+- Alerting
+- Service monitoring
+
+## Grafana
+
+Grafana provides visualization and dashboards for:
+
+- Kubernetes cluster
+- Nodes
+- Pods
+- Prometheus metrics
+- Loki logs
+
+## Loki
+
+Loki provides centralized log aggregation.
+
+Promtail collects container logs from Kubernetes nodes and forwards them to Loki.
+
+## Synthetic Monitoring
+
+Planned feature.
+
+Synthetic monitoring will be used to continuously verify the availability and response time of critical application endpoints.
+
+# CI/CD
+
+The project provides a Kubernetes-based CI/CD platform for application build, image management and deployment automation.
+
+The CI/CD stack includes:
+
+- Jenkins
+- GitLab
+- Harbor
+- Argo CD
+
+Workflow
+```text
+Developer
+    |
+    v
+GitLab
+    |
+    v
+Jenkins
+    |
+    v
+Build
+    |
+    v
+Harbor
+    |
+    v
+Argo CD
+    |
+    v
+Kubernetes
+```
+
+# Disaster Recovery
+
+## etcd Backup & Restore
+
+The Kubernetes control plane uses etcd as the cluster state store.
+
+The project provides an etcd backup and restore strategy to protect critical Kubernetes control-plane data.
+
+### Backup
+
+```text
+Kubernetes API Server
+        |
+        v
+       etcd
+        |
+        v
+   etcd snapshot
+        |
+        v
+ Tencent Cloud COS
+```
+
+### Restore
+
+```text
+COS Backup
+    |
+    v
+etcd snapshot
+    |
+    v
+etcd restore
+    |
+    v
+Kubernetes API Server
+```
+
+
+# Deployment
+
+## Prerequisites
 Execute below command
 1. Install tencent cloud cli and input secret key/id
 ```bash
@@ -192,21 +471,208 @@ ssh USERNAME@YOURIP
 kubectl get ns
 ```
 
-# Terraform Runbook
-| Step     | Command | Description  |
-| :------- | :---: | ----: |
-| 1     | terraform init -backend-config="YOUR_BUCKET" | To deploy K8s on CVM  |
-| 2     | terraform apply -target=module.k8s_cvm -var-file="dev.tfvars"   | To deploy K8s on CVM |
-| 3     | terraform apply -target=module.k8s_cfs -var-file="dev.tfvars"   | To create K8s storage with CFS CSI |
-| 4     | terraform apply -target=module.k8s_ingress -var-file="dev.tfvars"   | To deploy ingress-nginx on K8s cluster  |
-| 5     | terraform apply -target=module.k8s_monitoring -var-file="dev.tfvars"   | To deploy monitoring framework on K8s cluster  |
-| 6     | terraform apply -target=module.k8s_cicd -var-file="dev.tfvars"   | To deploy K8s CICD on K8s cluster  |
+## Terraform Runbook
 
-# One Click Script
+| Step | Command | Description |
+| :--- | :--- | :--- |
+| 1 | `terraform init ...` | Initialize Terraform backend |
+| 2 | `terraform apply ...` | Deploy Kubernetes on CVM |
+| 3 | `terraform apply ...` | Configure CFS CSI storage |
+| 4 | `terraform apply ...` | Deploy ingress-nginx |
+| 5 | `terraform apply ...` | Deploy monitoring stack |
+| 6 | `terraform apply ...` | Deploy CI/CD platform |
+
+## One Click Script
+### Create
 ```bash
-# To create the whole infrastructure
 ./script/create.sh
+```
 
-# To destroy the whole infrastructure
+### Destroy
+```bash
 ./script/destroy.sh
+```
+
+# Project Structure
+
+```text
+.
+├── modules/
+│   ├── k8s_cvm/
+│   ├── k8s_cfs/
+│   ├── k8s_ingress/
+│   ├── k8s_monitoring/
+│   └── k8s_cicd/
+│
+├── script/
+│   ├── create.sh
+│   └── destroy.sh
+│
+├── config/
+│   ├── monitoring/
+│   └── ...
+│
+├── dev.tfvars
+├── main.tf
+├── variables.tf
+├── outputs.tf
+└── README.md
+```
+
+# Troubleshooting
+
+This section documents common issues encountered during the deployment and operation of the Kubernetes platform.
+
+## Troubleshooting Workflow
+
+For most Kubernetes issues, follow a consistent troubleshooting workflow:
+
+```text
+1. Check Pod Status
+        |
+        v
+2. Check Events
+        |
+        v
+3. Check Pod Logs
+        |
+        v
+4. Check Service / Endpoints
+        |
+        v
+5. Check Storage
+        |
+        v
+6. Check Node Resources
+        |
+        v
+7. Check Network / Ingress
+        |
+        v
+8. Check Terraform / Helm Configuration
+```
+
+Useful commands:
+```bash
+kubectl get pods -A
+kubectl get events -A --sort-by=.lastTimestamp
+kubectl describe pod <pod-name> -n <namespace>
+kubectl logs <pod-name> -n <namespace>
+kubectl get svc -A
+kubectl get ingress -A
+kubectl get pvc -A
+kubectl get nodes
+kubectl top nodes
+```
+
+## Terraform Kubernetes API Connection Timeout
+### Symptom
+
+Terraform fails to connect to the Kubernetes API server:
+
+dial tcp <API_SERVER>:6443: i/o timeout
+
+### Possible Causes
+- Kubernetes API server is not ready yet
+- The local kubeconfig points to an unavailable API endpoint
+- The Kubernetes cluster is still being initialized
+- Terraform starts Kubernetes resources before the control plane is ready
+
+### Troubleshooting
+
+Check the cluster from the master node:
+```bash
+kubectl get nodes
+kubectl get pods -A
+
+kubectl cluster-info
+```
+
+Although the cluster works fine, k8s provider fail to create resources in the same module.
+
+Move the k8s resource to another module to avoid terraform lifecycle error.
+
+## Helm Deployment Timeout
+### Symptom
+
+Terraform Helm deployment fails with:
+
+context deadline exceeded
+
+### Possible Causes
+- Kubernetes workloads are still starting
+- Container images are being pulled
+- PersistentVolumeClaims are waiting for storage
+- Pods cannot be scheduled
+- Helm timeout is too short
+- Troubleshooting
+
+Check Helm releases:
+
+```bash
+helm list -A
+```
+
+Check pods:
+
+```bash
+kubectl get pods -A
+```
+
+Check pending pods:
+```bash
+kubectl get pods -A | grep Pending
+```
+
+Inspect pod events:
+
+```bash
+kubectl describe pod <pod-name> -n <namespace>
+kubectl logs pod <pod-name> -n <namespace>
+```
+
+For large monitoring workloads, increase the Helm timeout when necessary.
+
+## CFS CSI / PVC Provisioning Issues
+### Symptom
+
+CSI provider fail to revoke PV even if the pod has been deleted.
+A PVC remains in Pending state:
+
+```text
+NAME          STATUS    VOLUME   CAPACITY
+example-pvc   Pending
+```
+
+### Possible Causes
+- CFS CSI Driver is not running
+- StorageClass configuration is incorrect
+- CFS access group or access rules are incorrect
+- Kubernetes nodes cannot reach the CFS service
+- PVC requests an unsupported configuration
+
+### Troubleshooting
+
+Check the PVC:
+
+```bash
+kubectl describe pvc <pvc-name>
+```
+
+Check the StorageClass:
+```bash
+kubectl get storageclass
+kubectl describe storageclass cfs-shared-storageclass
+```
+Check the CSI driver:
+```bash
+kubectl get csidriver
+```
+Check CFS CSI components:
+```bash
+kubectl get pods -n kube-system | grep cfs
+```
+Check Kubernetes events:
+```bash
+kubectl get events -A --sort-by=.lastTimestamp
 ```
