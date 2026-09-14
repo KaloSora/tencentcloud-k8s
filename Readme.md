@@ -2,6 +2,28 @@
 This repository mainly use terraform to create vm and deploy k8s on tencent cloud.
 
 # Feature
+## CFS CSI Storage
+
+This project integrates the Tencent Cloud CFS CSI Driver to provide shared persistent storage for Kubernetes workloads.
+
+The CFS CSI Driver implements the Kubernetes Container Storage Interface (CSI) and allows workloads running on multiple Kubernetes nodes to mount Tencent Cloud File Storage (CFS). The project uses dynamic provisioning through a Kubernetes StorageClass.
+
+### CFS CSI Components
+
+The CFS CSI Driver is installed as part of the Kubernetes cluster initialization process in the `k8s_cvm` module.
+
+The `k8s_cfs` Terraform module is responsible for configuring the CFS storage resources and Kubernetes StorageClass.
+
+The deployment consists of:
+
+- CFS CSI controller / provisioner
+- CFS CSI node plugin
+- Tencent Cloud CFS access group
+- CFS access rules
+- Kubernetes StorageClass
+
+The CSI components run in the kube-system namespace. The official Tencent Cloud documentation describes the controller as a StatefulSet and the node plugin as a DaemonSet.
+
 ## Pod Security Standard
 This project applies Kubernetes Pod Security Standards (PSS) to enforce workload security and least-privilege principles.
 
