@@ -477,12 +477,12 @@ kubectl get ns
 
 | Step | Command | Description |
 | :--- | :--- | :--- |
-| 1 | `terraform init ...` | Initialize Terraform backend |
-| 2 | `terraform apply ...` | Deploy Kubernetes on CVM |
-| 3 | `terraform apply ...` | Configure CFS CSI storage |
-| 4 | `terraform apply ...` | Deploy ingress-nginx |
-| 5 | `terraform apply ...` | Deploy monitoring stack |
-| 6 | `terraform apply ...` | Deploy CI/CD platform |
+| 1 | `terraform init -backend-config="YOUR_BUCKET"` | Initialize Terraform backend |
+| 2 | `terraform apply -target=module.k8s_cvm -var-file="dev.tfvars"` | Deploy Kubernetes on CVM |
+| 3 | `terraform apply -target=module.k8s_cfs -var-file="dev.tfvars"` | Configure CFS CSI storage |
+| 4 | `terraform apply -target=module.k8s_ingress -var-file="dev.tfvars"` | Deploy ingress-nginx |
+| 5 | `terraform apply -target=module.k8s_monitoring -var-file="dev.tfvars"` | Deploy monitoring stack |
+| 6 | `terraform apply -target=module.k8s_cicd -var-file="dev.tfvars"` | Deploy CI/CD platform |
 
 ## One Click Script
 ### Create
