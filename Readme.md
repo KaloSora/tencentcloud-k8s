@@ -342,6 +342,8 @@ Synthetic monitoring will be used to continuously verify the availability and re
 
 # CI/CD
 
+Planned feature, under development.
+
 The project provides a Kubernetes-based CI/CD platform for application build, image management and deployment automation.
 
 The CI/CD stack includes:
