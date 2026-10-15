@@ -59,6 +59,7 @@ helm_jenkins_version = "5.9.53"
 helm_jenkins_url = "jenkins.core.com"
 helm_jenkins_admin_username = "admin"
 helm_jenkins_admin_password = "Jenkins12345"
+plane_enabled = false
 helm_plane_version = "1.8.4"
 helm_plane_url = "plane.core.com"
 helm_plane_admin_email = "admin@core.com"

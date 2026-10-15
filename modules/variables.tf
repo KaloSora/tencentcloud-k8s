@@ -197,6 +197,12 @@ variable "helm_plane_version" {
   default     = "1.8.4"
 }
 
+variable "plane_enabled" {
+  type        = bool
+  description = "Whether to deploy Plane Community Edition"
+  default     = false
+}
+
 variable "helm_plane_url" {
   type        = string
   description = "External HTTP hostname for Plane"

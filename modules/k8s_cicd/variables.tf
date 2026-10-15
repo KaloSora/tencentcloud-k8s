@@ -55,6 +55,11 @@ variable "plane_version" {
   description = "Plane Community Edition Helm chart version"
 }
 
+variable "plane_enabled" {
+  type        = bool
+  description = "Whether to deploy Plane Community Edition"
+}
+
 variable "plane_url" {
   type        = string
   description = "External HTTP hostname for Plane"

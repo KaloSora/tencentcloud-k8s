@@ -44,6 +44,8 @@ resource "kubernetes_namespace" "jenkins_namespace" {
 }
 
 resource "kubernetes_namespace" "plane_namespace" {
+  count = var.plane_enabled ? 1 : 0
+
   metadata {
     name = "plane"
     labels = {
@@ -134,36 +136,43 @@ resource "helm_release" "jenkins" {
 
 ### Plane Community Edition
 resource "random_password" "plane_secret_key" {
+  count   = var.plane_enabled ? 1 : 0
   length  = 64
   special = false
 }
 
 resource "random_password" "plane_live_server_secret_key" {
+  count   = var.plane_enabled ? 1 : 0
   length  = 64
   special = false
 }
 
 resource "random_password" "plane_postgres_password" {
+  count   = var.plane_enabled ? 1 : 0
   length  = 32
   special = false
 }
 
 resource "random_password" "plane_rabbitmq_password" {
+  count   = var.plane_enabled ? 1 : 0
   length  = 32
   special = false
 }
 
 resource "random_password" "plane_minio_password" {
+  count   = var.plane_enabled ? 1 : 0
   length  = 32
   special = false
 }
 
 resource "helm_release" "plane" {
+  count = var.plane_enabled ? 1 : 0
+
   name             = "plane"
   repository       = "https://helm.plane.so/"
   chart            = "plane-ce"
   version          = var.plane_version
-  namespace        = kubernetes_namespace.plane_namespace.metadata[0].name
+  namespace        = kubernetes_namespace.plane_namespace[0].metadata[0].name
   create_namespace = false
   timeout          = 900
 
@@ -173,11 +182,11 @@ resource "helm_release" "plane" {
       {
         plane_url                    = var.plane_url
         storage_class                = var.storage_class_name
-        plane_secret_key             = random_password.plane_secret_key.result
-        plane_live_server_secret_key = random_password.plane_live_server_secret_key.result
-        postgres_password            = random_password.plane_postgres_password.result
-        rabbitmq_password            = random_password.plane_rabbitmq_password.result
-        minio_password               = random_password.plane_minio_password.result
+        plane_secret_key             = random_password.plane_secret_key[0].result
+        plane_live_server_secret_key = random_password.plane_live_server_secret_key[0].result
+        postgres_password            = random_password.plane_postgres_password[0].result
+        rabbitmq_password            = random_password.plane_rabbitmq_password[0].result
+        minio_password               = random_password.plane_minio_password[0].result
         plane_admin_email            = var.plane_admin_email
         plane_admin_password         = var.plane_admin_password
       }

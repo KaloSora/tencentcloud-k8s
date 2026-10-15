@@ -11,6 +11,7 @@ module "k8s_cicd" {
   jenkins_url            = var.helm_jenkins_url
   jenkins_admin_username = var.helm_jenkins_admin_username
   jenkins_admin_password = var.helm_jenkins_admin_password
+  plane_enabled          = var.plane_enabled
   plane_version          = var.helm_plane_version
   plane_url              = var.helm_plane_url
   plane_admin_email      = var.helm_plane_admin_email
