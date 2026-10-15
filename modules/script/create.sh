@@ -41,6 +41,15 @@ TF_DIR="${PROJECT_ROOT}"
 TF_VAR_FILE="dev.tfvars"
 
 # ------------------------------------------------------------
+# Optional modules
+#
+# Set either value to false to skip deploying that module.
+# ------------------------------------------------------------
+
+DEPLOY_MONITORING=false
+DEPLOY_CICD=true
+
+# ------------------------------------------------------------
 # Tencent Cloud Terraform Backend
 # ------------------------------------------------------------
 
@@ -80,6 +89,30 @@ run_step() {
     echo "[PASS] STEP ${step}"
 }
 
+tf_console_value() {
+    local expression="$1"
+    local value
+
+    if ! value="$(terraform console -var-file="${TF_VAR_FILE}" <<< "${expression}" 2>/dev/null)"; then
+        echo "<unavailable>"
+        return 0
+    fi
+
+    value="${value#\"}"
+    value="${value%\"}"
+    echo "${value}"
+}
+
+validate_boolean() {
+    local name="$1"
+    local value="$2"
+
+    case "${value}" in
+        true|false) ;;
+        *) error "${name} must be true or false, got: ${value}" ;;
+    esac
+}
+
 # ------------------------------------------------------------
 # Pre-check
 # ------------------------------------------------------------
@@ -101,6 +134,9 @@ command -v terraform >/dev/null 2>&1 || \
 [[ -f "${TF_DIR}/${TF_VAR_FILE}" ]] || \
     error "Terraform variable file not found: ${TF_DIR}/${TF_VAR_FILE}"
 
+validate_boolean "DEPLOY_MONITORING" "${DEPLOY_MONITORING}"
+validate_boolean "DEPLOY_CICD" "${DEPLOY_CICD}"
+
 cd "${TF_DIR}"
 
 echo "Project root       : ${PROJECT_ROOT}"
@@ -108,6 +144,8 @@ echo "Terraform directory: ${TF_DIR}"
 echo "Variable file      : ${TF_VAR_FILE}"
 echo "Backend bucket     : ${TF_BACKEND_BUCKET}"
 echo "Backend region     : ${TF_BACKEND_REGION}"
+echo "Deploy monitoring  : ${DEPLOY_MONITORING}"
+echo "Deploy CI/CD       : ${DEPLOY_CICD}"
 
 # ------------------------------------------------------------
 # STEP 1 - Terraform Init
@@ -167,21 +205,29 @@ run_step "4/6 - Deploy Ingress NGINX" \
 # STEP 5 - Monitoring
 # ------------------------------------------------------------
 
-run_step "5/6 - Deploy Monitoring Framework" \
-    terraform apply \
-    -target=module.k8s_monitoring \
-    -var-file="${TF_VAR_FILE}" \
-    -auto-approve
+if [[ "${DEPLOY_MONITORING}" == "true" ]]; then
+    run_step "5/6 - Deploy Monitoring Framework" \
+        terraform apply \
+        -target=module.k8s_monitoring \
+        -var-file="${TF_VAR_FILE}" \
+        -auto-approve
+else
+    echo "[SKIP] STEP 5/6 - Monitoring deployment is disabled"
+fi
 
 # ------------------------------------------------------------
 # STEP 6 - CICD
 # ------------------------------------------------------------
 
-run_step "6/6 - Deploy Kubernetes CICD" \
-    terraform apply \
-    -target=module.k8s_cicd \
-    -var-file="${TF_VAR_FILE}" \
-    -auto-approve
+if [[ "${DEPLOY_CICD}" == "true" ]]; then
+    run_step "6/6 - Deploy Kubernetes CICD" \
+        terraform apply \
+        -target=module.k8s_cicd \
+        -var-file="${TF_VAR_FILE}" \
+        -auto-approve
+else
+    echo "[SKIP] STEP 6/6 - CI/CD deployment is disabled"
+fi
 
 # ------------------------------------------------------------
 # Final State
@@ -207,4 +253,65 @@ echo
 echo "Next step:"
 echo
 echo "  ./scripts/verify.sh"
-echo
+
+# ------------------------------------------------------------
+# Service access summary
+# ------------------------------------------------------------
+
+if [[ "${DEPLOY_MONITORING}" == "true" || "${DEPLOY_CICD}" == "true" ]]; then
+    log "SERVICE ACCESS"
+fi
+
+if [[ "${DEPLOY_MONITORING}" == "true" ]]; then
+    GRAFANA_URL="$(tf_console_value 'var.helm_grafana_url')"
+
+    echo
+    echo "Grafana"
+    echo "  URL             : http://${GRAFANA_URL}"
+    echo "  Username        : admin"
+    echo "  Password config : helm_grafana_password"
+fi
+
+if [[ "${DEPLOY_CICD}" == "true" ]]; then
+    JENKINS_URL="$(tf_console_value 'nonsensitive(var.cicd_components["jenkins"].config["jenkins_url"])')"
+    JENKINS_USERNAME="$(tf_console_value 'nonsensitive(var.cicd_components["jenkins"].config["jenkins_admin_username"])')"
+    ARGOCD_URL="$(tf_console_value 'nonsensitive(var.cicd_components["argocd"].config["argocd_url"])')"
+    HARBOR_URL="$(tf_console_value 'nonsensitive(var.cicd_components["harbor"].config["harbor_url"])')"
+
+    echo
+    echo "Jenkins"
+    echo "  URL             : http://${JENKINS_URL}"
+    echo "  Username        : ${JENKINS_USERNAME}"
+    echo "  Password config : cicd_components.jenkins.config.jenkins_admin_password"
+
+    echo
+    echo "Argo CD"
+    echo "  URL             : http://${ARGOCD_URL}"
+    echo "  Username        : admin"
+    echo "  Password config : cicd_components.argocd.config.argocd_admin_password"
+
+    echo
+    echo "Harbor"
+    echo "  URL             : https://${HARBOR_URL}"
+    echo "  Username        : admin"
+    echo "  Password config : cicd_components.harbor.config.harbor_password"
+
+    PLANE_ENABLED="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].enabled)')"
+
+    if [[ "${PLANE_ENABLED}" == "true" ]]; then
+        PLANE_URL="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].config["plane_url"])')"
+        PLANE_USERNAME="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].config["plane_admin_email"])')"
+
+        echo
+        echo "Plane"
+        echo "  URL             : http://${PLANE_URL}"
+        echo "  Username        : ${PLANE_USERNAME}"
+        echo "  Password config : cicd_components.plane.config.plane_admin_password"
+    fi
+fi
+
+if [[ "${DEPLOY_MONITORING}" == "true" || "${DEPLOY_CICD}" == "true" ]]; then
+    echo
+    echo "Passwords are intentionally not printed. Read the listed keys from ${TF_DIR}/${TF_VAR_FILE}."
+    echo
+fi
