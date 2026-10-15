@@ -44,26 +44,87 @@ cfs_storage_class_name = "cfs-shared-storageclass"
 
 ### K8s CICD variables
 helm_ingress_nginx_version = "4.11.5"
-helm_harbor_version = "1.19.2"
-helm_harbor_url = "harbor.core.com"
-helm_harbor_password = "Harbor12345"
 helm_loki_version = "2.10.0"
 helm_grafana_version = "8.6.0"
 helm_grafana_url = "grafana.core.com"
 helm_grafana_password = "Grafana12345"
 helm_kube_prometheus_stack_version = "88.6.1"
-helm_argocd_version = "10.10.3"
-helm_argocd_url = "argocd.core.com"
-helm_argocd_admin_password = "ArgoCD12345"
-helm_jenkins_version = "5.9.53"
-helm_jenkins_url = "jenkins.core.com"
-helm_jenkins_admin_username = "admin"
-helm_jenkins_admin_password = "Jenkins12345"
-jenkins_pipeline_repository_url = "https://github.com/KaloSora/tencentcloud-k8s-helm"
-jenkins_pipeline_repository_branch = "main"
-jenkins_pipeline_script_path = "Jenkinsfile"
-plane_enabled = false
-helm_plane_version = "1.8.4"
-helm_plane_url = "plane.core.com"
-helm_plane_admin_email = "admin@core.com"
-helm_plane_admin_password = "Plane12345"
+
+cicd_components = {
+  harbor = {
+    enabled         = true
+    release_name    = "harbor"
+    namespace       = "harbor"
+    repository      = "https://helm.goharbor.io"
+    chart           = "harbor"
+    version         = "1.19.2"
+    timeout         = 600
+    atomic          = true
+    wait            = true
+    wait_for_jobs   = false
+    value_templates = ["harbor.yaml"]
+    config = {
+      harbor_url      = "harbor.core.com"
+      harbor_password = "Harbor12345"
+    }
+  }
+
+  argocd = {
+    enabled         = true
+    release_name    = "argocd"
+    namespace       = "argocd"
+    repository      = "https://argoproj.github.io/argo-helm"
+    chart           = "argo-cd"
+    version         = "10.10.3"
+    timeout         = 600
+    atomic          = true
+    wait            = true
+    wait_for_jobs   = false
+    value_templates = ["argocd.yaml"]
+    config = {
+      argocd_url            = "argocd.core.com"
+      argocd_admin_password = "ArgoCD12345"
+    }
+  }
+
+  jenkins = {
+    enabled         = true
+    release_name    = "jenkins"
+    namespace       = "jenkins"
+    repository      = "https://charts.jenkins.io"
+    chart           = "jenkins"
+    version         = "5.9.53"
+    timeout         = 600
+    atomic          = true
+    wait            = true
+    wait_for_jobs   = false
+    value_templates = ["jenkins.yaml", "jenkins-controller.yaml"]
+    config = {
+      jenkins_url                        = "jenkins.core.com"
+      jenkins_admin_username             = "admin"
+      jenkins_admin_password             = "Jenkins12345"
+      jenkins_pipeline_repository_url    = "https://github.com/KaloSora/tencentcloud-k8s-helm"
+      jenkins_pipeline_repository_branch = "main"
+      jenkins_pipeline_script_path       = "Jenkinsfile"
+    }
+  }
+
+  plane = {
+    enabled         = false
+    release_name    = "plane"
+    namespace       = "plane"
+    repository      = "https://helm.plane.so/"
+    chart           = "plane-ce"
+    version         = "1.8.4"
+    timeout         = 900
+    atomic          = true
+    wait            = true
+    wait_for_jobs   = true
+    value_templates = ["plane.yaml"]
+    config = {
+      plane_url            = "plane.core.com"
+      plane_admin_email    = "admin@core.com"
+      plane_admin_password = "Plane12345"
+    }
+  }
+}

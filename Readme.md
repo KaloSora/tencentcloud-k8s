@@ -356,9 +356,14 @@ The CI/CD stack includes:
 Jenkins is initialized through Configuration as Code. Its controller has no
 local executors; builds run as disposable Pods in the `cicd-build` namespace
 using the least-privilege `jenkins-agent` ServiceAccount. The pipeline job reads
-its Jenkinsfile from the repository configured by
-`jenkins_pipeline_repository_url`, `jenkins_pipeline_repository_branch`, and
-`jenkins_pipeline_script_path`.
+its Jenkinsfile from the repository configured under
+`cicd_components.jenkins.config`.
+
+CI/CD Helm releases are created by the reusable `helm_component` module. Each
+entry in `cicd_components` defines its namespace, chart, version, values
+templates, lifecycle flags, and component-specific configuration. A regular
+new component therefore requires an inventory entry and a values YAML template,
+not another copy of the `helm_release` resource.
 
 Workflow
 ```text

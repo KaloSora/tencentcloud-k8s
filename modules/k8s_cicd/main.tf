@@ -1,30 +1,57 @@
 locals {
-  helm_default_timeout                    = 600
-  harbor_namespace                        = "harbor"
+  enabled_component_names = nonsensitive(toset([
+    for name, component in var.components : name
+    if component.enabled
+  ]))
+  jenkins_enabled                         = contains(local.enabled_component_names, "jenkins")
+  plane_enabled                           = contains(local.enabled_component_names, "plane")
   jenkins_agent_namespace                 = "cicd-build"
   jenkins_agent_service_account_name      = "jenkins-agent"
   jenkins_controller_service_account_name = "jenkins-controller"
   k8s_pss_version                         = "v${join(".", slice(split(".", var.k8s_version), 0, 2))}"
-}
 
-### PSA configuration for monitoring
-resource "kubernetes_namespace" "harbor_namespace" {
-  metadata {
-    name = local.harbor_namespace
+  component_template_vars = {
+    for name, component in var.components : name => merge(
+      component.config,
+      {
+        storage_class = var.storage_class_name
+      },
+      name == "argocd" ? {
+        argocd_admin_password_bcrypt = bcrypt(component.config["argocd_admin_password"])
+      } : {},
+      name == "jenkins" ? {
+        jenkins_agent_namespace                 = local.jenkins_agent_namespace
+        jenkins_agent_service_account_name      = local.jenkins_agent_service_account_name
+        jenkins_controller_service_account_name = local.jenkins_controller_service_account_name
+      } : {},
+      name == "plane" && local.plane_enabled ? {
+        plane_secret_key             = random_password.plane_secret_key[0].result
+        plane_live_server_secret_key = random_password.plane_live_server_secret_key[0].result
+        postgres_password            = random_password.plane_postgres_password[0].result
+        rabbitmq_password            = random_password.plane_rabbitmq_password[0].result
+        minio_password               = random_password.plane_minio_password[0].result
+      } : {}
+    )
+  }
 
-    labels = {
-      "pod-security.kubernetes.io/audit"         = "restricted"
-      "pod-security.kubernetes.io/audit-version" = local.k8s_pss_version
-
-      "pod-security.kubernetes.io/warn"         = "restricted"
-      "pod-security.kubernetes.io/warn-version" = local.k8s_pss_version
-    }
+  rendered_component_values = {
+    for name, component in var.components : name => [
+      for template_name in nonsensitive(component.value_templates) :
+      templatefile(
+        "${path.module}/helm_values/${template_name}",
+        local.component_template_vars[name]
+      )
+    ] if contains(local.enabled_component_names, name)
   }
 }
 
-resource "kubernetes_namespace" "argocd_namespace" {
+# One namespace is created for every enabled component in the inventory.
+resource "kubernetes_namespace" "component" {
+  for_each = local.enabled_component_names
+
   metadata {
-    name = "argocd"
+    name = nonsensitive(var.components[each.key].namespace)
+
     labels = {
       "pod-security.kubernetes.io/audit"         = "restricted"
       "pod-security.kubernetes.io/audit-version" = local.k8s_pss_version
@@ -34,21 +61,14 @@ resource "kubernetes_namespace" "argocd_namespace" {
   }
 }
 
-resource "kubernetes_namespace" "jenkins_namespace" {
-  metadata {
-    name = "jenkins"
-    labels = {
-      "pod-security.kubernetes.io/audit"         = "restricted"
-      "pod-security.kubernetes.io/audit-version" = local.k8s_pss_version
-      "pod-security.kubernetes.io/warn"          = "restricted"
-      "pod-security.kubernetes.io/warn-version"  = local.k8s_pss_version
-    }
-  }
-}
-
+# Jenkins-specific runtime resources stay outside the generic Helm component
+# module because they must exist before the Jenkins release is installed.
 resource "kubernetes_namespace" "jenkins_agent_namespace" {
+  count = local.jenkins_enabled ? 1 : 0
+
   metadata {
     name = local.jenkins_agent_namespace
+
     labels = {
       "pod-security.kubernetes.io/audit"         = "restricted"
       "pod-security.kubernetes.io/audit-version" = local.k8s_pss_version
@@ -59,9 +79,11 @@ resource "kubernetes_namespace" "jenkins_agent_namespace" {
 }
 
 resource "kubernetes_service_account" "jenkins_agent" {
+  count = local.jenkins_enabled ? 1 : 0
+
   metadata {
     name      = local.jenkins_agent_service_account_name
-    namespace = kubernetes_namespace.jenkins_agent_namespace.metadata[0].name
+    namespace = kubernetes_namespace.jenkins_agent_namespace[0].metadata[0].name
   }
 
   automount_service_account_token = false
@@ -70,9 +92,11 @@ resource "kubernetes_service_account" "jenkins_agent" {
 # The controller can only manage ephemeral build pods in the dedicated agent
 # namespace. Build agents themselves receive no Kubernetes API permissions.
 resource "kubernetes_role" "jenkins_schedule_agents" {
+  count = local.jenkins_enabled ? 1 : 0
+
   metadata {
     name      = "jenkins-schedule-agents"
-    namespace = kubernetes_namespace.jenkins_agent_namespace.metadata[0].name
+    namespace = kubernetes_namespace.jenkins_agent_namespace[0].metadata[0].name
   }
 
   rule {
@@ -101,193 +125,79 @@ resource "kubernetes_role" "jenkins_schedule_agents" {
 }
 
 resource "kubernetes_role_binding" "jenkins_controller_schedule_agents" {
+  count = local.jenkins_enabled ? 1 : 0
+
   metadata {
     name      = "jenkins-controller-schedule-agents"
-    namespace = kubernetes_namespace.jenkins_agent_namespace.metadata[0].name
+    namespace = kubernetes_namespace.jenkins_agent_namespace[0].metadata[0].name
   }
 
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "Role"
-    name      = kubernetes_role.jenkins_schedule_agents.metadata[0].name
+    name      = kubernetes_role.jenkins_schedule_agents[0].metadata[0].name
   }
 
   subject {
     kind      = "ServiceAccount"
     name      = local.jenkins_controller_service_account_name
-    namespace = kubernetes_namespace.jenkins_namespace.metadata[0].name
+    namespace = kubernetes_namespace.component["jenkins"].metadata[0].name
   }
 }
 
-resource "kubernetes_namespace" "plane_namespace" {
-  count = var.plane_enabled ? 1 : 0
-
-  metadata {
-    name = "plane"
-    labels = {
-      "pod-security.kubernetes.io/audit"         = "restricted"
-      "pod-security.kubernetes.io/audit-version" = local.k8s_pss_version
-      "pod-security.kubernetes.io/warn"          = "restricted"
-      "pod-security.kubernetes.io/warn-version"  = local.k8s_pss_version
-    }
-  }
-}
-
-### Harbor
-resource "helm_release" "harbor" {
-
-  name             = "harbor"
-  repository       = "https://helm.goharbor.io"
-  chart            = "harbor"
-  version          = var.harbor_version
-  namespace        = kubernetes_namespace.harbor_namespace.metadata[0].name
-  create_namespace = false
-  timeout          = local.helm_default_timeout
-
-  values = [
-    templatefile(
-      "${path.module}/helm_values/harbor.yaml",
-      {
-        harbor_url      = var.harbor_url
-        harbor_password = var.harbor_password
-        storage_class   = var.storage_class_name
-      }
-    )
-  ]
-
-  atomic = true
-  wait   = true
-}
-
-### Argo CD
-resource "helm_release" "argocd" {
-  name             = "argocd"
-  repository       = "https://argoproj.github.io/argo-helm"
-  chart            = "argo-cd"
-  version          = var.argocd_version
-  namespace        = kubernetes_namespace.argocd_namespace.metadata[0].name
-  create_namespace = false
-  timeout          = local.helm_default_timeout
-
-  values = [
-    templatefile(
-      "${path.module}/helm_values/argocd.yaml",
-      {
-        argocd_url                   = var.argocd_url
-        argocd_admin_password_bcrypt = bcrypt(var.argocd_admin_password)
-        storage_class                = var.storage_class_name
-      }
-    )
-  ]
-
-  atomic = true
-  wait   = true
-}
-
-### Jenkins
-resource "helm_release" "jenkins" {
-  name             = "jenkins"
-  repository       = "https://charts.jenkins.io"
-  chart            = "jenkins"
-  version          = var.jenkins_version
-  namespace        = kubernetes_namespace.jenkins_namespace.metadata[0].name
-  create_namespace = false
-  timeout          = local.helm_default_timeout
-
-  values = [
-    templatefile(
-      "${path.module}/helm_values/jenkins.yaml",
-      {
-        jenkins_agent_namespace            = local.jenkins_agent_namespace
-        jenkins_agent_service_account_name = local.jenkins_agent_service_account_name
-        storage_class                      = var.storage_class_name
-      }
-    ),
-    templatefile(
-      "${path.module}/helm_values/jenkins-controller.yaml",
-      {
-        jenkins_url                             = var.jenkins_url
-        jenkins_admin_username                  = var.jenkins_admin_username
-        jenkins_admin_password                  = var.jenkins_admin_password
-        jenkins_controller_service_account_name = local.jenkins_controller_service_account_name
-        jenkins_pipeline_repository_url         = var.jenkins_pipeline_repository_url
-        jenkins_pipeline_repository_branch      = var.jenkins_pipeline_repository_branch
-        jenkins_pipeline_script_path            = var.jenkins_pipeline_script_path
-      }
-    )
-  ]
-
-  atomic = true
-  wait   = true
-
-  depends_on = [
-    kubernetes_role_binding.jenkins_controller_schedule_agents,
-    kubernetes_service_account.jenkins_agent,
-  ]
-}
-
-### Plane Community Edition
+# Plane keeps generated secrets in Terraform state and only creates them while
+# the component is enabled.
 resource "random_password" "plane_secret_key" {
-  count   = var.plane_enabled ? 1 : 0
+  count   = local.plane_enabled ? 1 : 0
   length  = 64
   special = false
 }
 
 resource "random_password" "plane_live_server_secret_key" {
-  count   = var.plane_enabled ? 1 : 0
+  count   = local.plane_enabled ? 1 : 0
   length  = 64
   special = false
 }
 
 resource "random_password" "plane_postgres_password" {
-  count   = var.plane_enabled ? 1 : 0
+  count   = local.plane_enabled ? 1 : 0
   length  = 32
   special = false
 }
 
 resource "random_password" "plane_rabbitmq_password" {
-  count   = var.plane_enabled ? 1 : 0
+  count   = local.plane_enabled ? 1 : 0
   length  = 32
   special = false
 }
 
 resource "random_password" "plane_minio_password" {
-  count   = var.plane_enabled ? 1 : 0
+  count   = local.plane_enabled ? 1 : 0
   length  = 32
   special = false
 }
 
-resource "helm_release" "plane" {
-  count = var.plane_enabled ? 1 : 0
+# Every enabled inventory item is installed by the same reusable Helm module.
+module "component" {
+  for_each = local.enabled_component_names
+  source   = "./helm_component"
 
-  name             = "plane"
-  repository       = "https://helm.plane.so/"
-  chart            = "plane-ce"
-  version          = var.plane_version
-  namespace        = kubernetes_namespace.plane_namespace[0].metadata[0].name
-  create_namespace = false
-  timeout          = 900
+  component = {
+    release_name  = nonsensitive(var.components[each.key].release_name)
+    repository    = nonsensitive(var.components[each.key].repository)
+    chart         = nonsensitive(var.components[each.key].chart)
+    version       = nonsensitive(var.components[each.key].version)
+    namespace     = nonsensitive(var.components[each.key].namespace)
+    timeout       = nonsensitive(var.components[each.key].timeout)
+    atomic        = nonsensitive(var.components[each.key].atomic)
+    wait          = nonsensitive(var.components[each.key].wait)
+    wait_for_jobs = nonsensitive(var.components[each.key].wait_for_jobs)
+  }
+  values = local.rendered_component_values[each.key]
 
-  values = [
-    templatefile(
-      "${path.module}/helm_values/plane.yaml",
-      {
-        plane_url                    = var.plane_url
-        storage_class                = var.storage_class_name
-        plane_secret_key             = random_password.plane_secret_key[0].result
-        plane_live_server_secret_key = random_password.plane_live_server_secret_key[0].result
-        postgres_password            = random_password.plane_postgres_password[0].result
-        rabbitmq_password            = random_password.plane_rabbitmq_password[0].result
-        minio_password               = random_password.plane_minio_password[0].result
-        plane_admin_email            = var.plane_admin_email
-        plane_admin_password         = var.plane_admin_password
-      }
-    )
+  depends_on = [
+    kubernetes_namespace.component,
+    kubernetes_role_binding.jenkins_controller_schedule_agents,
+    kubernetes_service_account.jenkins_agent,
   ]
-
-  atomic        = true
-  wait          = true
-  wait_for_jobs = true
 }
-
-

@@ -135,105 +135,24 @@ variable "helm_ingress_nginx_version" {
   description = "Ingress Nginx version"
 }
 
-variable "helm_harbor_version" {
-  type        = string
-  description = "Harbor version"
-}
-
-variable "helm_harbor_url" {
-  type        = string
-  description = "Harbor URL"
-}
-
-variable "helm_harbor_password" {
-  type        = string
-  description = "Harbor admin password"
-  default     = "Harbor12345"
-}
-
-variable "helm_argocd_version" {
-  type        = string
-  description = "Argo CD Helm chart version"
-  default     = "10.10.3"
-}
-
-variable "helm_argocd_url" {
-  type        = string
-  description = "External hostname for Argo CD"
-}
-
-variable "helm_argocd_admin_password" {
-  type        = string
-  description = "Initial password for the Argo CD admin user"
+variable "cicd_components" {
+  description = "CI/CD component inventory consumed by the generic Helm component module"
   sensitive   = true
-}
 
-variable "helm_jenkins_version" {
-  type        = string
-  description = "Jenkins Helm chart version"
-  default     = "5.9.53"
-}
-
-variable "helm_jenkins_url" {
-  type        = string
-  description = "External HTTP hostname for Jenkins"
-}
-
-variable "helm_jenkins_admin_username" {
-  type        = string
-  description = "Jenkins administrator username"
-  default     = "admin"
-}
-
-variable "helm_jenkins_admin_password" {
-  type        = string
-  description = "Jenkins administrator password"
-  sensitive   = true
-}
-
-variable "jenkins_pipeline_repository_url" {
-  type        = string
-  description = "Public Git repository containing the Jenkins pipeline"
-}
-
-variable "jenkins_pipeline_repository_branch" {
-  type        = string
-  description = "Git branch containing the Jenkinsfile"
-  default     = "main"
-}
-
-variable "jenkins_pipeline_script_path" {
-  type        = string
-  description = "Path to the Jenkinsfile within the pipeline repository"
-  default     = "Jenkinsfile"
-}
-
-variable "helm_plane_version" {
-  type        = string
-  description = "Plane Community Edition Helm chart version"
-  default     = "1.8.4"
-}
-
-variable "plane_enabled" {
-  type        = bool
-  description = "Whether to deploy Plane Community Edition"
-  default     = false
-}
-
-variable "helm_plane_url" {
-  type        = string
-  description = "External HTTP hostname for Plane"
-}
-
-variable "helm_plane_admin_email" {
-  type        = string
-  description = "Email address for the initial Plane instance administrator"
-}
-
-variable "helm_plane_admin_password" {
-  type        = string
-  description = "Password for the initial Plane instance administrator"
-  sensitive   = true
+  type = map(object({
+    enabled         = bool
+    release_name    = string
+    namespace       = string
+    repository      = string
+    chart           = string
+    version         = string
+    timeout         = number
+    atomic          = bool
+    wait            = bool
+    wait_for_jobs   = bool
+    value_templates = list(string)
+    config          = map(string)
+  }))
 }
 
 variable "k8s_kubeconfig_path" {

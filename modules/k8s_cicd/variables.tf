@@ -1,109 +1,50 @@
-variable "harbor_version" {
-  type        = string
-  description = "Helm Harbor version"
-}
-
-variable "harbor_url" {
-  type        = string
-  description = "Helm Harbor URL"
-}
-
-variable "harbor_password" {
-  type        = string
-  description = "Harbor admin password"
-}
-
-variable "argocd_version" {
-  type        = string
-  description = "Argo CD Helm chart version"
-}
-
-variable "argocd_url" {
-  type        = string
-  description = "External hostname for Argo CD"
-}
-
-variable "argocd_admin_password" {
-  type        = string
-  description = "Initial password for the Argo CD admin user"
+variable "components" {
+  description = "CI/CD component inventory rendered through the generic Helm component module"
   sensitive   = true
-}
 
-variable "jenkins_version" {
-  type        = string
-  description = "Jenkins Helm chart version"
-}
-
-variable "jenkins_url" {
-  type        = string
-  description = "External HTTP hostname for Jenkins"
-}
-
-variable "jenkins_admin_username" {
-  type        = string
-  description = "Jenkins administrator username"
-}
-
-variable "jenkins_admin_password" {
-  type        = string
-  description = "Jenkins administrator password"
-  sensitive   = true
-}
-
-variable "jenkins_pipeline_repository_url" {
-  type        = string
-  description = "Public Git repository containing the Jenkins pipeline"
+  type = map(object({
+    enabled         = bool
+    release_name    = string
+    namespace       = string
+    repository      = string
+    chart           = string
+    version         = string
+    timeout         = number
+    atomic          = bool
+    wait            = bool
+    wait_for_jobs   = bool
+    value_templates = list(string)
+    config          = map(string)
+  }))
 
   validation {
-    condition     = can(regex("^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\\.git)?$", var.jenkins_pipeline_repository_url))
-    error_message = "jenkins_pipeline_repository_url must be a GitHub HTTPS repository URL."
+    condition = alltrue([
+      for name in keys(var.components) :
+      can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", name))
+    ])
+    error_message = "Component keys must be valid lowercase Kubernetes-style names."
   }
-}
-
-variable "jenkins_pipeline_repository_branch" {
-  type        = string
-  description = "Git branch containing the Jenkinsfile"
 
   validation {
-    condition     = can(regex("^[A-Za-z0-9._/-]+$", var.jenkins_pipeline_repository_branch))
-    error_message = "jenkins_pipeline_repository_branch contains unsupported characters."
+    condition = alltrue(flatten([
+      for component in values(var.components) : [
+        for template_name in component.value_templates :
+        can(regex("^[A-Za-z0-9_.-]+\\.ya?ml$", template_name))
+      ]
+    ]))
+    error_message = "value_templates entries must be YAML filenames located in helm_values."
   }
-}
-
-variable "jenkins_pipeline_script_path" {
-  type        = string
-  description = "Path to the Jenkinsfile within the pipeline repository"
 
   validation {
-    condition     = can(regex("^[A-Za-z0-9._/-]+$", var.jenkins_pipeline_script_path))
-    error_message = "jenkins_pipeline_script_path must be a repository-relative path."
+    condition = length(distinct([
+      for component in values(var.components) : component.namespace
+      if component.enabled
+      ])) == length([
+      for component in values(var.components) : component.namespace
+      if component.enabled
+    ])
+    error_message = "Enabled CI/CD components must use unique namespaces."
   }
-}
-
-variable "plane_version" {
-  type        = string
-  description = "Plane Community Edition Helm chart version"
-}
-
-variable "plane_enabled" {
-  type        = bool
-  description = "Whether to deploy Plane Community Edition"
-}
-
-variable "plane_url" {
-  type        = string
-  description = "External HTTP hostname for Plane"
-}
-
-variable "plane_admin_email" {
-  type        = string
-  description = "Email address for the initial Plane instance administrator"
-}
-
-variable "plane_admin_password" {
-  type        = string
-  description = "Password for the initial Plane instance administrator"
-  sensitive   = true
 }
 
 variable "storage_class_name" {
