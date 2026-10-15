@@ -1,7 +1,10 @@
 locals {
-  helm_default_timeout = 600
-  harbor_namespace     = "harbor"
-  k8s_pss_version      = "v${join(".", slice(split(".", var.k8s_version), 0, 2))}"
+  helm_default_timeout                    = 600
+  harbor_namespace                        = "harbor"
+  jenkins_agent_namespace                 = "cicd-build"
+  jenkins_agent_service_account_name      = "jenkins-agent"
+  jenkins_controller_service_account_name = "jenkins-controller"
+  k8s_pss_version                         = "v${join(".", slice(split(".", var.k8s_version), 0, 2))}"
 }
 
 ### PSA configuration for monitoring
@@ -40,6 +43,79 @@ resource "kubernetes_namespace" "jenkins_namespace" {
       "pod-security.kubernetes.io/warn"          = "restricted"
       "pod-security.kubernetes.io/warn-version"  = local.k8s_pss_version
     }
+  }
+}
+
+resource "kubernetes_namespace" "jenkins_agent_namespace" {
+  metadata {
+    name = local.jenkins_agent_namespace
+    labels = {
+      "pod-security.kubernetes.io/audit"         = "restricted"
+      "pod-security.kubernetes.io/audit-version" = local.k8s_pss_version
+      "pod-security.kubernetes.io/warn"          = "restricted"
+      "pod-security.kubernetes.io/warn-version"  = local.k8s_pss_version
+    }
+  }
+}
+
+resource "kubernetes_service_account" "jenkins_agent" {
+  metadata {
+    name      = local.jenkins_agent_service_account_name
+    namespace = kubernetes_namespace.jenkins_agent_namespace.metadata[0].name
+  }
+
+  automount_service_account_token = false
+}
+
+# The controller can only manage ephemeral build pods in the dedicated agent
+# namespace. Build agents themselves receive no Kubernetes API permissions.
+resource "kubernetes_role" "jenkins_schedule_agents" {
+  metadata {
+    name      = "jenkins-schedule-agents"
+    namespace = kubernetes_namespace.jenkins_agent_namespace.metadata[0].name
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods"]
+    verbs      = ["create", "delete", "get", "list", "patch", "watch"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods/exec"]
+    verbs      = ["create", "get"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods/log"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["events"]
+    verbs      = ["get", "list", "watch"]
+  }
+}
+
+resource "kubernetes_role_binding" "jenkins_controller_schedule_agents" {
+  metadata {
+    name      = "jenkins-controller-schedule-agents"
+    namespace = kubernetes_namespace.jenkins_agent_namespace.metadata[0].name
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.jenkins_schedule_agents.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = local.jenkins_controller_service_account_name
+    namespace = kubernetes_namespace.jenkins_namespace.metadata[0].name
   }
 }
 
@@ -122,16 +198,32 @@ resource "helm_release" "jenkins" {
     templatefile(
       "${path.module}/helm_values/jenkins.yaml",
       {
-        jenkins_url            = var.jenkins_url
-        jenkins_admin_username = var.jenkins_admin_username
-        jenkins_admin_password = var.jenkins_admin_password
-        storage_class          = var.storage_class_name
+        jenkins_agent_namespace            = local.jenkins_agent_namespace
+        jenkins_agent_service_account_name = local.jenkins_agent_service_account_name
+        storage_class                      = var.storage_class_name
+      }
+    ),
+    templatefile(
+      "${path.module}/helm_values/jenkins-controller.yaml",
+      {
+        jenkins_url                             = var.jenkins_url
+        jenkins_admin_username                  = var.jenkins_admin_username
+        jenkins_admin_password                  = var.jenkins_admin_password
+        jenkins_controller_service_account_name = local.jenkins_controller_service_account_name
+        jenkins_pipeline_repository_url         = var.jenkins_pipeline_repository_url
+        jenkins_pipeline_repository_branch      = var.jenkins_pipeline_repository_branch
+        jenkins_pipeline_script_path            = var.jenkins_pipeline_script_path
       }
     )
   ]
 
   atomic = true
   wait   = true
+
+  depends_on = [
+    kubernetes_role_binding.jenkins_controller_schedule_agents,
+    kubernetes_service_account.jenkins_agent,
+  ]
 }
 
 ### Plane Community Edition

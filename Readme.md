@@ -349,16 +349,23 @@ The project provides a Kubernetes-based CI/CD platform for application build, im
 The CI/CD stack includes:
 
 - Jenkins
-- GitLab
+- GitHub
 - Harbor
 - Argo CD
+
+Jenkins is initialized through Configuration as Code. Its controller has no
+local executors; builds run as disposable Pods in the `cicd-build` namespace
+using the least-privilege `jenkins-agent` ServiceAccount. The pipeline job reads
+its Jenkinsfile from the repository configured by
+`jenkins_pipeline_repository_url`, `jenkins_pipeline_repository_branch`, and
+`jenkins_pipeline_script_path`.
 
 Workflow
 ```text
 Developer
     |
     v
-GitLab
+GitHub
     |
     v
 Jenkins

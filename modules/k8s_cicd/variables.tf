@@ -50,6 +50,36 @@ variable "jenkins_admin_password" {
   sensitive   = true
 }
 
+variable "jenkins_pipeline_repository_url" {
+  type        = string
+  description = "Public Git repository containing the Jenkins pipeline"
+
+  validation {
+    condition     = can(regex("^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\\.git)?$", var.jenkins_pipeline_repository_url))
+    error_message = "jenkins_pipeline_repository_url must be a GitHub HTTPS repository URL."
+  }
+}
+
+variable "jenkins_pipeline_repository_branch" {
+  type        = string
+  description = "Git branch containing the Jenkinsfile"
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9._/-]+$", var.jenkins_pipeline_repository_branch))
+    error_message = "jenkins_pipeline_repository_branch contains unsupported characters."
+  }
+}
+
+variable "jenkins_pipeline_script_path" {
+  type        = string
+  description = "Path to the Jenkinsfile within the pipeline repository"
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9._/-]+$", var.jenkins_pipeline_script_path))
+    error_message = "jenkins_pipeline_script_path must be a repository-relative path."
+  }
+}
+
 variable "plane_version" {
   type        = string
   description = "Plane Community Edition Helm chart version"

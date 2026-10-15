@@ -1,0 +1,64 @@
+# Jenkins controller configuration is kept separate from the ephemeral agent
+# configuration in jenkins.yaml.
+controller:
+  # Do not execute builds on the persistent controller pod.
+  numExecutors: 0
+  jenkinsUrlProtocol: "http"
+
+  admin:
+    username: "${jenkins_admin_username}"
+    password: "${jenkins_admin_password}"
+    createSecret: true
+
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    hostName: "${jenkins_url}"
+    path: "/"
+    pathType: Prefix
+    tls: []
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+  # Job DSL supplies the JCasC `jobs` root used to create the pipeline job.
+  additionalPlugins:
+    - "job-dsl:3732.v9a_c49a_61a_313"
+
+  JCasC:
+    defaultConfig: true
+    overwriteConfiguration: false
+    configScripts:
+      bootstrap-pipeline: |
+        jobs:
+          - script: >
+              pipelineJob('tencentcloud-k8s-helm') {
+                description('Pipeline managed by Jenkins Configuration as Code.')
+                definition {
+                  cpsScm {
+                    scm {
+                      git {
+                        remote {
+                          url('${jenkins_pipeline_repository_url}')
+                        }
+                        branch('*/${jenkins_pipeline_repository_branch}')
+                      }
+                    }
+                    scriptPath('${jenkins_pipeline_script_path}')
+                    lightweight(true)
+                  }
+                }
+              }
+
+serviceAccount:
+  create: true
+  name: "${jenkins_controller_service_account_name}"
+  automountServiceAccountToken: true

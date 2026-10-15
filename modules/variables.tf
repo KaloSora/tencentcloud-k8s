@@ -191,6 +191,23 @@ variable "helm_jenkins_admin_password" {
   sensitive   = true
 }
 
+variable "jenkins_pipeline_repository_url" {
+  type        = string
+  description = "Public Git repository containing the Jenkins pipeline"
+}
+
+variable "jenkins_pipeline_repository_branch" {
+  type        = string
+  description = "Git branch containing the Jenkinsfile"
+  default     = "main"
+}
+
+variable "jenkins_pipeline_script_path" {
+  type        = string
+  description = "Path to the Jenkinsfile within the pipeline repository"
+  default     = "Jenkinsfile"
+}
+
 variable "helm_plane_version" {
   type        = string
   description = "Plane Community Edition Helm chart version"
