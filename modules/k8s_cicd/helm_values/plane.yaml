@@ -1,0 +1,175 @@
+# Plane Community Edition is exposed over plain HTTP through ingress-nginx.
+planeVersion: "v1.4.2"
+
+ingress:
+  enabled: true
+  appHost: "${plane_url}"
+  minioHost: ""
+  rabbitmqHost: ""
+  ingressClass: "nginx"
+  ingress_annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+
+ssl:
+  createIssuer: false
+  generateCerts: false
+  tls_secret_name: ""
+  externalTermination: false
+
+# The bundled stateful services use the Tencent Cloud CFS CSI StorageClass.
+postgres:
+  local_setup: true
+  storageClass: "${storage_class}"
+  volumeSize: "20Gi"
+
+redis:
+  local_setup: true
+  storageClass: "${storage_class}"
+  volumeSize: "2Gi"
+
+rabbitmq:
+  local_setup: true
+  storageClass: "${storage_class}"
+  volumeSize: "5Gi"
+  default_password: "${rabbitmq_password}"
+
+minio:
+  local_setup: true
+  storageClass: "${storage_class}"
+  volumeSize: "50Gi"
+  root_user: "plane"
+  root_password: "${minio_password}"
+  env:
+    minio_endpoint_ssl: false
+
+env:
+  pgdb_username: "plane"
+  pgdb_password: "${postgres_password}"
+  pgdb_name: "plane"
+  secret_key: "${plane_secret_key}"
+  live_server_secret_key: "${plane_live_server_secret_key}"
+  default_cluster_domain: "cluster.local"
+  doc_upload_size_limit: "20971520"
+
+web:
+  replicas: 1
+  cpuRequest: "50m"
+  memoryRequest: "128Mi"
+  cpuLimit: "500m"
+  memoryLimit: "512Mi"
+
+space:
+  replicas: 1
+  cpuRequest: "50m"
+  memoryRequest: "128Mi"
+  cpuLimit: "500m"
+  memoryLimit: "512Mi"
+
+admin:
+  replicas: 1
+  cpuRequest: "50m"
+  memoryRequest: "128Mi"
+  cpuLimit: "500m"
+  memoryLimit: "512Mi"
+
+live:
+  replicas: 1
+  cpuRequest: "100m"
+  memoryRequest: "256Mi"
+  cpuLimit: "500m"
+  memoryLimit: "1Gi"
+
+api:
+  replicas: 1
+  cpuRequest: "250m"
+  memoryRequest: "512Mi"
+  cpuLimit: "1"
+  memoryLimit: "2Gi"
+
+worker:
+  replicas: 1
+  cpuRequest: "250m"
+  memoryRequest: "512Mi"
+  cpuLimit: "1"
+  memoryLimit: "2Gi"
+
+beatworker:
+  replicas: 1
+  cpuRequest: "100m"
+  memoryRequest: "256Mi"
+  cpuLimit: "500m"
+  memoryLimit: "1Gi"
+
+# Plane CE has no Helm value for a predefined instance administrator. This
+# one-time post-install Job performs the same first-run signup as the UI.
+extraObjects:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: plane-bootstrap-admin
+    type: Opaque
+    stringData:
+      email: "${plane_admin_email}"
+      password: "${plane_admin_password}"
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: plane-admin-bootstrap
+      annotations:
+        helm.sh/hook: post-install
+        helm.sh/hook-weight: "10"
+        helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    spec:
+      backoffLimit: 20
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: plane-admin-bootstrap
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: bootstrap
+              image: curlimages/curl:8.12.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: PLANE_ADMIN_EMAIL
+                  valueFrom:
+                    secretKeyRef:
+                      name: plane-bootstrap-admin
+                      key: email
+                - name: PLANE_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: plane-bootstrap-admin
+                      key: password
+              command:
+                - /bin/sh
+                - -ec
+              args:
+                - |
+                  until curl -fsS -c /tmp/cookies -H "Host: ${plane_url}" \
+                    http://plane-api:8000/auth/get-csrf-token/ >/dev/null; do
+                    sleep 5
+                  done
+
+                  csrf_token="$(awk '$6 == "csrftoken" { print $7 }' /tmp/cookies | tail -n 1)"
+                  test -n "$csrf_token"
+
+                  curl -fsS \
+                    -H "Host: ${plane_url}" \
+                    -H "Referer: http://${plane_url}/" \
+                    -H "Cookie: csrftoken=$csrf_token" \
+                    -H "X-CSRFToken: $csrf_token" \
+                    --data-urlencode "email=$PLANE_ADMIN_EMAIL" \
+                    --data-urlencode "password=$PLANE_ADMIN_PASSWORD" \
+                    --data-urlencode "first_name=Admin" \
+                    http://plane-api:8000/api/instances/admins/sign-up/
+              resources:
+                requests:
+                  cpu: "10m"
+                  memory: "32Mi"
+                limits:
+                  cpu: "100m"
+                  memory: "128Mi"

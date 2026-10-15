@@ -1,0 +1,45 @@
+# Jenkins is exposed over HTTP by the existing ingress-nginx controller.
+controller:
+  # Effective external URL: http://${jenkins_url}
+  jenkinsUrlProtocol: "http"
+
+  admin:
+    username: "${jenkins_admin_username}"
+    password: "${jenkins_admin_password}"
+    createSecret: true
+
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    hostName: "${jenkins_url}"
+    path: "/"
+    pathType: Prefix
+    tls: []
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+# Jenkins home must survive controller pod replacement. Tencent Cloud CFS
+# supports ReadWriteMany and is provisioned by the configured CSI driver.
+persistence:
+  enabled: true
+  storageClass: "${storage_class}"
+  accessMode: "ReadWriteMany"
+  size: "20Gi"
+
+agent:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
