@@ -36,7 +36,7 @@ locals {
 
   rendered_component_values = {
     for name, component in var.components : name => [
-      for template_name in nonsensitive(component.value_templates) :
+      for template_name in component.value_templates :
       templatefile(
         "${path.module}/helm_values/${template_name}",
         local.component_template_vars[name]
