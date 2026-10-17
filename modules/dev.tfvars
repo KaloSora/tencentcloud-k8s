@@ -100,12 +100,16 @@ cicd_components = {
     wait_for_jobs   = false
     value_templates = ["jenkins.yaml", "jenkins-controller.yaml"]
     config = {
-      jenkins_url                        = "jenkins.core.com"
-      jenkins_admin_username             = "admin"
-      jenkins_admin_password             = "Jenkins12345"
-      jenkins_pipeline_repository_url    = "https://github.com/KaloSora/tencentcloud-k8s-helm"
-      jenkins_pipeline_repository_branch = "main"
-      jenkins_pipeline_script_path       = "Jenkinsfile"
+      jenkins_url                      = "jenkins.core.com"
+      jenkins_admin_username           = "admin"
+      jenkins_admin_password           = "Jenkins12345"
+      jenkins_pipeline_job_name        = "tencentcloud-k8s-app"
+      jenkins_pipeline_scm_id          = "tencentcloud-k8s-app-git"
+      jenkins_pipeline_repository_url  = "https://github.com/KaloSora/tencentcloud-k8s-app.git"
+      jenkins_pipeline_script_path     = "ci/jenkins/Jenkinsfile"
+      jenkins_pipeline_branch_includes = "*"
+      jenkins_pipeline_branch_excludes = ""
+      jenkins_pipeline_scan_interval   = "5m"
     }
   }
 

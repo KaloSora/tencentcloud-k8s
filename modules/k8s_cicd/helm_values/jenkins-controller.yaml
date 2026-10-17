@@ -29,7 +29,8 @@ controller:
       cpu: "2"
       memory: "4Gi"
 
-  # Job DSL supplies the JCasC `jobs` root used to create the pipeline job.
+  # Job DSL supplies the JCasC `jobs` root used to create the multibranch
+  # pipeline job. Repository polling avoids coupling Jenkins to SCM webhooks.
   additionalPlugins:
     - "job-dsl:3732.v9a_c49a_61a_313"
 
@@ -40,20 +41,29 @@ controller:
       bootstrap-pipeline: |
         jobs:
           - script: >
-              pipelineJob('tencentcloud-k8s-helm') {
-                description('Pipeline managed by Jenkins Configuration as Code.')
-                definition {
-                  cpsScm {
-                    scm {
-                      git {
-                        remote {
-                          url('${jenkins_pipeline_repository_url}')
-                        }
-                        branch('*/${jenkins_pipeline_repository_branch}')
-                      }
-                    }
+              multibranchPipelineJob('${jenkins_pipeline_job_name}') {
+                description('Application multibranch pipeline managed by Jenkins Configuration as Code.')
+                branchSources {
+                  git {
+                    id('${jenkins_pipeline_scm_id}')
+                    remote('${jenkins_pipeline_repository_url}')
+                    includes('${jenkins_pipeline_branch_includes}')
+                    excludes('${jenkins_pipeline_branch_excludes}')
+                  }
+                }
+                factory {
+                  workflowBranchProjectFactory {
                     scriptPath('${jenkins_pipeline_script_path}')
-                    lightweight(true)
+                  }
+                }
+                triggers {
+                  periodicFolderTrigger {
+                    interval('${jenkins_pipeline_scan_interval}')
+                  }
+                }
+                orphanedItemStrategy {
+                  discardOldItems {
+                    numToKeep(20)
                   }
                 }
               }

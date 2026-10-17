@@ -78,6 +78,45 @@ resource "kubernetes_namespace" "jenkins_agent_namespace" {
   }
 }
 
+# The controller's config-reload sidecar watches JCasC ConfigMaps in the
+# Jenkins namespace. Keep this permission separate from agent scheduling so
+# the controller does not receive broader access to the Jenkins namespace.
+resource "kubernetes_role" "jenkins_watch_casc_configmaps" {
+  count = local.jenkins_enabled ? 1 : 0
+
+  metadata {
+    name      = "jenkins-watch-casc-configmaps"
+    namespace = kubernetes_namespace.component["jenkins"].metadata[0].name
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["configmaps"]
+    verbs      = ["get", "list", "watch"]
+  }
+}
+
+resource "kubernetes_role_binding" "jenkins_controller_watch_casc_configmaps" {
+  count = local.jenkins_enabled ? 1 : 0
+
+  metadata {
+    name      = "jenkins-controller-watch-casc-configmaps"
+    namespace = kubernetes_namespace.component["jenkins"].metadata[0].name
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.jenkins_watch_casc_configmaps[0].metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = local.jenkins_controller_service_account_name
+    namespace = kubernetes_namespace.component["jenkins"].metadata[0].name
+  }
+}
+
 resource "kubernetes_service_account" "jenkins_agent" {
   count = local.jenkins_enabled ? 1 : 0
 
@@ -197,6 +236,7 @@ module "component" {
 
   depends_on = [
     kubernetes_namespace.component,
+    kubernetes_role_binding.jenkins_controller_watch_casc_configmaps,
     kubernetes_role_binding.jenkins_controller_schedule_agents,
     kubernetes_service_account.jenkins_agent,
   ]
