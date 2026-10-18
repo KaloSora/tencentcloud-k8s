@@ -29,6 +29,10 @@ controller:
       cpu: "2"
       memory: "4Gi"
 
+  # Resolve required dependency versions instead of pulling the latest ones,
+  # which can require a newer JCasC plugin than the chart's pinned version.
+  installLatestPlugins: false
+
   # Job DSL supplies the JCasC `jobs` root used to create the multibranch
   # pipeline job. Repository polling avoids coupling Jenkins to SCM webhooks.
   additionalPlugins:
