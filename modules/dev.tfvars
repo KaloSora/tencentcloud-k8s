@@ -50,6 +50,8 @@ helm_grafana_url = "grafana.core.com"
 helm_grafana_password = "Grafana12345"
 helm_kube_prometheus_stack_version = "88.6.1"
 
+argocd_gitops_repo_url = "https://github.com/KaloSora/tencentcloud-k8s-gitops.git"
+
 cicd_components = {
   harbor = {
     enabled         = true

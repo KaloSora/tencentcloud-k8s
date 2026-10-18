@@ -47,6 +47,12 @@ variable "components" {
   }
 }
 
+variable "argocd_gitops_repo_url" {
+  description = "GitOps repository read by the Argo CD bootstrap Application; empty disables bootstrap"
+  type        = string
+  default     = ""
+}
+
 variable "storage_class_name" {
   description = "Storage class name for persistent volumes"
   type        = string

@@ -155,6 +155,12 @@ variable "cicd_components" {
   }))
 }
 
+variable "argocd_gitops_repo_url" {
+  description = "GitOps repository read by the Argo CD bootstrap Application; empty disables bootstrap"
+  type        = string
+  default     = ""
+}
+
 variable "k8s_kubeconfig_path" {
   type        = string
   description = "Path to the kubeconfig file"
