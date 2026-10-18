@@ -20,11 +20,12 @@ set -Eeuo pipefail
 #
 # Destroy order:
 #
-#   1. module.k8s_cicd
-#   2. module.k8s_monitoring
-#   3. module.k8s_ingress
-#   4. module.k8s_cfs
-#   5. module.k8s_cvm
+#   1. module.k8s_app
+#   2. module.k8s_cicd
+#   3. module.k8s_monitoring
+#   4. module.k8s_ingress
+#   5. module.k8s_cfs
+#   6. module.k8s_cvm
 # ============================================================
 
 # ------------------------------------------------------------
@@ -67,7 +68,7 @@ run_destroy() {
 
     echo
     echo "------------------------------------------------------------"
-    echo "STEP ${step}/5 - Destroy ${module}"
+    echo "STEP ${step}/6 - Destroy ${module}"
     echo "------------------------------------------------------------"
 
     terraform destroy \
@@ -123,11 +124,12 @@ log "DESTROY WARNING"
 
 echo "The following Terraform modules will be destroyed:"
 echo
-echo "  1. module.k8s_cicd"
-echo "  2. module.k8s_monitoring"
-echo "  3. module.k8s_ingress"
-echo "  4. module.k8s_cfs"
-echo "  5. module.k8s_cvm"
+echo "  1. module.k8s_app"
+echo "  2. module.k8s_cicd"
+echo "  3. module.k8s_monitoring"
+echo "  4. module.k8s_ingress"
+echo "  5. module.k8s_cfs"
+echo "  6. module.k8s_cvm"
 echo
 echo "This operation is DESTRUCTIVE."
 echo
@@ -148,15 +150,17 @@ fi
 # Destroy
 # ------------------------------------------------------------
 
-run_destroy "1" "module.k8s_cicd"
+run_destroy "1" "module.k8s_app"
 
-run_destroy "2" "module.k8s_monitoring"
+run_destroy "2" "module.k8s_cicd"
 
-run_destroy "3" "module.k8s_ingress"
+run_destroy "3" "module.k8s_monitoring"
 
-run_destroy "4" "module.k8s_cfs"
+run_destroy "4" "module.k8s_ingress"
 
-run_destroy "5" "module.k8s_cvm"
+run_destroy "5" "module.k8s_cfs"
+
+run_destroy "6" "module.k8s_cvm"
 
 # ------------------------------------------------------------
 # Final State

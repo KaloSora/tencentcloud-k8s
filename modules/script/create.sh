@@ -26,6 +26,7 @@ set -Eeuo pipefail
 #   4. module.k8s_ingress
 #   5. module.k8s_monitoring
 #   6. module.k8s_cicd
+#   7. module.k8s_app
 # ============================================================
 
 set -o pipefail
@@ -151,7 +152,7 @@ echo "Deploy CI/CD       : ${DEPLOY_CICD}"
 # STEP 1 - Terraform Init
 # ------------------------------------------------------------
 
-log "STEP 1/6 - Terraform Init"
+log "STEP 1/7 - Terraform Init"
 
 terraform init \
     -backend-config="bucket=${TF_BACKEND_BUCKET}" \
@@ -175,7 +176,7 @@ echo "[PASS] Terraform configuration is valid"
 # STEP 2 - Kubernetes CVM
 # ------------------------------------------------------------
 
-run_step "2/6 - Deploy Kubernetes on CVM" \
+run_step "2/7 - Deploy Kubernetes on CVM" \
     terraform apply \
     -target=module.k8s_cvm \
     -var-file="${TF_VAR_FILE}" \
@@ -185,7 +186,7 @@ run_step "2/6 - Deploy Kubernetes on CVM" \
 # STEP 3 - CFS CSI
 # ------------------------------------------------------------
 
-run_step "3/6 - Create K8s Storage with CFS CSI" \
+run_step "3/7 - Create K8s Storage with CFS CSI" \
     terraform apply \
     -target=module.k8s_cfs \
     -var-file="${TF_VAR_FILE}" \
@@ -195,7 +196,7 @@ run_step "3/6 - Create K8s Storage with CFS CSI" \
 # STEP 4 - Ingress NGINX
 # ------------------------------------------------------------
 
-run_step "4/6 - Deploy Ingress NGINX" \
+run_step "4/7 - Deploy Ingress NGINX" \
     terraform apply \
     -target=module.k8s_ingress \
     -var-file="${TF_VAR_FILE}" \
@@ -206,13 +207,13 @@ run_step "4/6 - Deploy Ingress NGINX" \
 # ------------------------------------------------------------
 
 if [[ "${DEPLOY_MONITORING}" == "true" ]]; then
-    run_step "5/6 - Deploy Monitoring Framework" \
+    run_step "5/7 - Deploy Monitoring Framework" \
         terraform apply \
         -target=module.k8s_monitoring \
         -var-file="${TF_VAR_FILE}" \
         -auto-approve
 else
-    echo "[SKIP] STEP 5/6 - Monitoring deployment is disabled"
+    echo "[SKIP] STEP 5/7 - Monitoring deployment is disabled"
 fi
 
 # ------------------------------------------------------------
@@ -220,14 +221,24 @@ fi
 # ------------------------------------------------------------
 
 if [[ "${DEPLOY_CICD}" == "true" ]]; then
-    run_step "6/6 - Deploy Kubernetes CICD" \
+    run_step "6/7 - Deploy Kubernetes CICD" \
         terraform apply \
         -target=module.k8s_cicd \
         -var-file="${TF_VAR_FILE}" \
         -auto-approve
 else
-    echo "[SKIP] STEP 6/6 - CI/CD deployment is disabled"
+    echo "[SKIP] STEP 6/7 - CI/CD deployment is disabled"
 fi
+
+# ------------------------------------------------------------
+# STEP 7 - Application promotion namespaces
+# ------------------------------------------------------------
+
+run_step "7/7 - Create Application Promotion Namespaces" \
+    terraform apply \
+    -target=module.k8s_app \
+    -var-file="${TF_VAR_FILE}" \
+    -auto-approve
 
 # ------------------------------------------------------------
 # Final State

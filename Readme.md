@@ -138,6 +138,7 @@ The infrastructure is organized into independent Terraform modules:
 | `k8s_ingress` | Deploy ingress-nginx |
 | `k8s_monitoring` | Deploy Prometheus, Grafana and Loki |
 | `k8s_cicd` | Deploy Kubernetes CI/CD components |
+| `k8s_app` | Create secured application namespaces for environment promotion |
 
 This modular structure allows individual platform components to be deployed and managed independently.
 
@@ -496,6 +497,7 @@ Use `terraform apply -target=<module> -var-file="dev.tfvars"` to use Terraform v
 | 4 | `terraform apply -target=module.k8s_ingress` | Deploy ingress-nginx |
 | 5 | `terraform apply -target=module.k8s_monitoring` | Deploy monitoring stack |
 | 6 | `terraform apply -target=module.k8s_cicd` | Deploy CI/CD platform |
+| 7 | `terraform apply -target=module.k8s_app` | Create application promotion namespaces |
 
 ## One Click Script
 ### Create
@@ -517,7 +519,8 @@ Use `terraform apply -target=<module> -var-file="dev.tfvars"` to use Terraform v
 │   ├── k8s_cfs/
 │   ├── k8s_ingress/
 │   ├── k8s_monitoring/
-│   └── k8s_cicd/
+│   ├── k8s_cicd/
+│   └── k8s_app/
 │
 ├── script/
 │   ├── create.sh
