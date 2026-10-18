@@ -109,7 +109,7 @@ cicd_components = {
       jenkins_pipeline_scm_id          = "tencentcloud-k8s-app-git"
       jenkins_pipeline_repository_url  = "https://github.com/KaloSora/tencentcloud-k8s-app.git"
       jenkins_pipeline_script_path     = "ci/jenkins/Jenkinsfile"
-      jenkins_pipeline_branch_includes = "*"
+      jenkins_pipeline_branch_includes = "JIRA-*"
       jenkins_pipeline_branch_excludes = ""
       jenkins_pipeline_scan_interval   = "5m"
     }
