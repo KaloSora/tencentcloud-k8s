@@ -1,19 +1,17 @@
 expose:
   type: ingress
   tls:
-    enabled: true
-    certSource: "auto"
-    secret:
-      secretName: "harbor-tls"
+    enabled: false
   ingress:
     className: "nginx"
     hosts:
       core: "${harbor_url}"
     annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
       nginx.ingress.kubernetes.io/proxy-body-size: "0"
 
-externalURL: "https://${harbor_url}"
+externalURL: "http://${harbor_url}"
 
 harborAdminPassword: "${harbor_password}"
 

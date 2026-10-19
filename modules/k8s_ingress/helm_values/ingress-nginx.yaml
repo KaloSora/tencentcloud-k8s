@@ -3,6 +3,9 @@ controller:
     initialDelaySeconds: 60
     periodSeconds: 10
   hostNetwork: true
+  # Serve HTTP on each controller node's port 80 for Harbor ingress.
+  containerPort:
+    http: 80
   dnsPolicy: ClusterFirstWithHostNet
   kind: DaemonSet
   ingressClassResource:
@@ -10,6 +13,7 @@ controller:
   image:
     digest: ""
   service:
+    enableHttp: true
     type: ClusterIP
   # nodeSelector:
   #   purpose: devops
