@@ -33,8 +33,8 @@ controller:
   # which can require a newer JCasC plugin than the chart's pinned version.
   installLatestPlugins: false
 
-  # Job DSL supplies the JCasC `jobs` root used to create the multibranch
-  # pipeline job. Repository polling avoids coupling Jenkins to SCM webhooks.
+  # Job DSL creates the automatic multibranch build job and manual promotion
+  # job. Only the build job scans for repository changes.
   additionalPlugins:
     - "job-dsl:3732.v9a_c49a_61a_313"
 
@@ -68,6 +68,30 @@ controller:
                 orphanedItemStrategy {
                   discardOldItems {
                     numToKeep(20)
+                  }
+                }
+              }
+          - script: >
+              pipelineJob('${jenkins_promotion_job_name}') {
+                description('Manual promotion of an existing image. Does not build or publish images. Managed by Jenkins Configuration as Code.')
+                parameters {
+                  choiceParam('TARGET_ENV', ['dev', 'uat', 'preprod', 'prod'], 'Target environment; promotion checks and approvals are enforced by the promotion script.')
+                  stringParam('IMAGE_REPOSITORY', 'harbor.core.com/library/com.tencentcloud/k8s-demo-app', 'Existing Harbor image repository without tag or digest.')
+                  stringParam('IMAGE_DIGEST', '', 'Existing Harbor image digest, sha256:...; never use latest.')
+                  stringParam('SOURCE_COMMIT', '', 'Full application commit SHA associated with the selected image, for traceability.')
+                }
+                definition {
+                  cpsScm {
+                    scm {
+                      git {
+                        remote {
+                          url('${jenkins_pipeline_repository_url}')
+                        }
+                        branch('${jenkins_promotion_scm_branch}')
+                      }
+                    }
+                    scriptPath('${jenkins_promotion_script_path}')
+                    lightweight(true)
                   }
                 }
               }
