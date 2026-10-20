@@ -27,10 +27,32 @@ resource "helm_release" "argocd_bootstrap" {
         namespaceResourceWhitelist = [{
           group = "argoproj.io"
           kind  = "AppProject"
+          }, {
+          group = "argoproj.io"
+          kind  = "Application"
         }]
       }
     }
     applications = {
+      gitops-applications = {
+        namespace = kubernetes_namespace.component["argocd"].metadata[0].name
+        project   = "gitops-bootstrap"
+        source = {
+          repoURL        = var.argocd_gitops_repo_url
+          targetRevision = "main"
+          path           = "argocd/applications"
+        }
+        destination = {
+          server    = "https://kubernetes.default.svc"
+          namespace = kubernetes_namespace.component["argocd"].metadata[0].name
+        }
+        syncPolicy = {
+          automated = {
+            prune    = false
+            selfHeal = true
+          }
+        }
+      }
       gitops-projects = {
         namespace = kubernetes_namespace.component["argocd"].metadata[0].name
         project   = "gitops-bootstrap"
