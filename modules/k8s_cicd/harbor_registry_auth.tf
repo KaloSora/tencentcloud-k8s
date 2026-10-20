@@ -1,12 +1,14 @@
 locals {
-  harbor_auth_enabled   = local.jenkins_enabled && contains(local.enabled_component_names, "harbor")
-  harbor_auth_script    = file("${path.module}/script/harbor_registry_auth.py")
-  harbor_auth_project   = nonsensitive(try(var.components["jenkins"].config["jenkins_harbor_project"], "library"))
-  harbor_auth_duration  = nonsensitive(try(var.components["jenkins"].config["jenkins_harbor_robot_duration_days"], "90"))
-  harbor_auth_revision  = nonsensitive(try(var.components["jenkins"].config["jenkins_harbor_bootstrap_revision"], "1"))
-  harbor_auth_registry  = nonsensitive(try(var.components["harbor"].config["harbor_url"], "harbor.core.com"))
-  harbor_auth_release   = nonsensitive(try(var.components["harbor"].release_name, "harbor"))
-  harbor_auth_namespace = nonsensitive(try(var.components["harbor"].namespace, "harbor"))
+  harbor_auth_enabled = local.jenkins_enabled && contains(local.enabled_component_names, "harbor")
+  harbor_auth_script  = file("${path.module}/script/harbor_registry_auth.py")
+  # Declassify only supplied, non-secret settings. Terraform 1.5 rejects
+  # nonsensitive() on ordinary fallback literals, so keep defaults outside it.
+  harbor_auth_project   = try(nonsensitive(var.components["jenkins"].config["jenkins_harbor_project"]), "library")
+  harbor_auth_duration  = try(nonsensitive(var.components["jenkins"].config["jenkins_harbor_robot_duration_days"]), "90")
+  harbor_auth_revision  = try(nonsensitive(var.components["jenkins"].config["jenkins_harbor_bootstrap_revision"]), "1")
+  harbor_auth_registry  = try(nonsensitive(var.components["harbor"].config["harbor_url"]), "harbor.core.com")
+  harbor_auth_release   = try(nonsensitive(var.components["harbor"].release_name), "harbor")
+  harbor_auth_namespace = try(nonsensitive(var.components["harbor"].namespace), "harbor")
   harbor_auth_hash = substr(sha256(jsonencode([
     local.harbor_auth_script, local.harbor_auth_project, local.harbor_auth_duration,
     local.harbor_auth_revision, local.harbor_auth_registry, local.harbor_auth_release
