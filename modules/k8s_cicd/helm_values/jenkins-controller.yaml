@@ -33,10 +33,22 @@ controller:
   # which can require a newer JCasC plugin than the chart's pinned version.
   installLatestPlugins: false
 
+  # Reconcile plugins already on the persistent Jenkins home with this list.
+  # Otherwise the chart's copy-if-missing step retains incompatible old jars.
+  overwritePlugins: true
+
   # Job DSL creates the automatic multibranch build job and manual promotion
-  # job. Only the build job scans for repository changes.
+  # job. Keep the Declarative family aligned: the default aggregator's minimum
+  # versions are older than the extensions retained on an existing PVC.
+  # Timestamper provides the timestamps() option used by both Jenkinsfiles.
   additionalPlugins:
     - "job-dsl:3732.v9a_c49a_61a_313"
+    - "pipeline-model-definition:2.2277.v00573e73ddf1"
+    - "pipeline-model-api:2.2277.v00573e73ddf1"
+    - "pipeline-model-extensions:2.2277.v00573e73ddf1"
+    - "workflow-job:1546.v62a_c59c112dd"
+    - "pipeline-stage-step:322.vecffa_99f371c"
+    - "timestamper:1.30"
 
   JCasC:
     defaultConfig: true
