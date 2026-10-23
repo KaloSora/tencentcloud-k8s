@@ -99,8 +99,8 @@ tf_console_value() {
         return 0
     fi
 
-    # Decode Terraform string escapes so passwords containing quotes or
-    # backslashes are displayed exactly, rather than as HCL string literals.
+    # Decode Terraform string escapes so service access values are displayed
+    # exactly, rather than as HCL string literals.
     if ! printf '%s' "${value}" | python3 -c '
 import json, sys
 value = json.load(sys.stdin)
@@ -280,18 +280,15 @@ echo "  ./scripts/verify.sh"
 
 if [[ "${DEPLOY_MONITORING}" == "true" || "${DEPLOY_CICD}" == "true" ]]; then
     log "SERVICE ACCESS"
-    echo "Temporary-cluster login passwords are printed below."
 fi
 
 if [[ "${DEPLOY_MONITORING}" == "true" ]]; then
     GRAFANA_URL="$(tf_console_value 'var.helm_grafana_url')"
-    GRAFANA_PASSWORD="$(tf_console_value 'var.helm_grafana_password')"
 
     echo
     echo "Grafana"
     echo "  URL             : http://${GRAFANA_URL}"
     echo "  Username        : admin"
-    printf '  Password        : %s\n' "${GRAFANA_PASSWORD}"
 fi
 
 if [[ "${DEPLOY_CICD}" == "true" ]]; then
@@ -299,39 +296,31 @@ if [[ "${DEPLOY_CICD}" == "true" ]]; then
     JENKINS_USERNAME="$(tf_console_value 'nonsensitive(var.cicd_components["jenkins"].config["jenkins_admin_username"])')"
     ARGOCD_URL="$(tf_console_value 'nonsensitive(var.cicd_components["argocd"].config["argocd_url"])')"
     HARBOR_URL="$(tf_console_value 'nonsensitive(var.cicd_components["harbor"].config["harbor_url"])')"
-    JENKINS_PASSWORD="$(tf_console_value 'nonsensitive(var.cicd_components["jenkins"].config["jenkins_admin_password"])')"
-    ARGOCD_PASSWORD="$(tf_console_value 'nonsensitive(var.cicd_components["argocd"].config["argocd_admin_password"])')"
-    HARBOR_PASSWORD="$(tf_console_value 'nonsensitive(var.cicd_components["harbor"].config["harbor_password"])')"
 
     echo
     echo "Jenkins"
     echo "  URL             : http://${JENKINS_URL}"
     echo "  Username        : ${JENKINS_USERNAME}"
-    printf '  Password        : %s\n' "${JENKINS_PASSWORD}"
 
     echo
     echo "Argo CD"
     echo "  URL             : http://${ARGOCD_URL}"
     echo "  Username        : admin"
-    printf '  Password        : %s\n' "${ARGOCD_PASSWORD}"
 
     echo
     echo "Harbor"
     echo "  URL             : http://${HARBOR_URL}"
     echo "  Username        : admin"
-    printf '  Password        : %s\n' "${HARBOR_PASSWORD}"
 
     PLANE_ENABLED="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].enabled)')"
 
     if [[ "${PLANE_ENABLED}" == "true" ]]; then
         PLANE_URL="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].config["plane_url"])')"
         PLANE_USERNAME="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].config["plane_admin_email"])')"
-        PLANE_PASSWORD="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].config["plane_admin_password"])')"
 
         echo
         echo "Plane"
         echo "  URL             : http://${PLANE_URL}"
         echo "  Username        : ${PLANE_USERNAME}"
-        printf '  Password        : %s\n' "${PLANE_PASSWORD}"
     fi
 fi
