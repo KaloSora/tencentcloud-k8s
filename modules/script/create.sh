@@ -47,8 +47,8 @@ TF_VAR_FILE="dev.tfvars"
 # Set either value to false to skip deploying that module.
 # ------------------------------------------------------------
 
-DEPLOY_MONITORING=false
-DEPLOY_CICD=true
+DEPLOY_MONITORING="${DEPLOY_MONITORING:-true}"
+DEPLOY_CICD="${DEPLOY_CICD:-true}"
 
 # ------------------------------------------------------------
 # Tencent Cloud Terraform Backend
@@ -99,9 +99,15 @@ tf_console_value() {
         return 0
     fi
 
-    value="${value#\"}"
-    value="${value%\"}"
-    echo "${value}"
+    # Decode Terraform string escapes so passwords containing quotes or
+    # backslashes are displayed exactly, rather than as HCL string literals.
+    if ! printf '%s' "${value}" | python3 -c '
+import json, sys
+value = json.load(sys.stdin)
+print(value if isinstance(value, str) else json.dumps(value))
+'; then
+        echo "<unavailable>"
+    fi
 }
 
 validate_boolean() {
@@ -122,6 +128,9 @@ log "Tencent Cloud K8s - CREATE"
 
 command -v terraform >/dev/null 2>&1 || \
     error "terraform command not found"
+
+command -v python3 >/dev/null 2>&1 || \
+    error "python3 command not found (required to decode service access values)"
 
 [[ -n "${TF_VAR_secret_id:-}" ]] || \
     error "TF_VAR_secret_id is not set"
@@ -271,16 +280,18 @@ echo "  ./scripts/verify.sh"
 
 if [[ "${DEPLOY_MONITORING}" == "true" || "${DEPLOY_CICD}" == "true" ]]; then
     log "SERVICE ACCESS"
+    echo "Temporary-cluster login passwords are printed below."
 fi
 
 if [[ "${DEPLOY_MONITORING}" == "true" ]]; then
     GRAFANA_URL="$(tf_console_value 'var.helm_grafana_url')"
+    GRAFANA_PASSWORD="$(tf_console_value 'var.helm_grafana_password')"
 
     echo
     echo "Grafana"
     echo "  URL             : http://${GRAFANA_URL}"
     echo "  Username        : admin"
-    echo "  Password config : helm_grafana_password"
+    printf '  Password        : %s\n' "${GRAFANA_PASSWORD}"
 fi
 
 if [[ "${DEPLOY_CICD}" == "true" ]]; then
@@ -288,41 +299,39 @@ if [[ "${DEPLOY_CICD}" == "true" ]]; then
     JENKINS_USERNAME="$(tf_console_value 'nonsensitive(var.cicd_components["jenkins"].config["jenkins_admin_username"])')"
     ARGOCD_URL="$(tf_console_value 'nonsensitive(var.cicd_components["argocd"].config["argocd_url"])')"
     HARBOR_URL="$(tf_console_value 'nonsensitive(var.cicd_components["harbor"].config["harbor_url"])')"
+    JENKINS_PASSWORD="$(tf_console_value 'nonsensitive(var.cicd_components["jenkins"].config["jenkins_admin_password"])')"
+    ARGOCD_PASSWORD="$(tf_console_value 'nonsensitive(var.cicd_components["argocd"].config["argocd_admin_password"])')"
+    HARBOR_PASSWORD="$(tf_console_value 'nonsensitive(var.cicd_components["harbor"].config["harbor_password"])')"
 
     echo
     echo "Jenkins"
     echo "  URL             : http://${JENKINS_URL}"
     echo "  Username        : ${JENKINS_USERNAME}"
-    echo "  Password config : cicd_components.jenkins.config.jenkins_admin_password"
+    printf '  Password        : %s\n' "${JENKINS_PASSWORD}"
 
     echo
     echo "Argo CD"
     echo "  URL             : http://${ARGOCD_URL}"
     echo "  Username        : admin"
-    echo "  Password config : cicd_components.argocd.config.argocd_admin_password"
+    printf '  Password        : %s\n' "${ARGOCD_PASSWORD}"
 
     echo
     echo "Harbor"
-    echo "  URL             : https://${HARBOR_URL}"
+    echo "  URL             : http://${HARBOR_URL}"
     echo "  Username        : admin"
-    echo "  Password config : cicd_components.harbor.config.harbor_password"
+    printf '  Password        : %s\n' "${HARBOR_PASSWORD}"
 
     PLANE_ENABLED="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].enabled)')"
 
     if [[ "${PLANE_ENABLED}" == "true" ]]; then
         PLANE_URL="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].config["plane_url"])')"
         PLANE_USERNAME="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].config["plane_admin_email"])')"
+        PLANE_PASSWORD="$(tf_console_value 'nonsensitive(var.cicd_components["plane"].config["plane_admin_password"])')"
 
         echo
         echo "Plane"
         echo "  URL             : http://${PLANE_URL}"
         echo "  Username        : ${PLANE_USERNAME}"
-        echo "  Password config : cicd_components.plane.config.plane_admin_password"
+        printf '  Password        : %s\n' "${PLANE_PASSWORD}"
     fi
-fi
-
-if [[ "${DEPLOY_MONITORING}" == "true" || "${DEPLOY_CICD}" == "true" ]]; then
-    echo
-    echo "Passwords are intentionally not printed. Read the listed keys from ${TF_DIR}/${TF_VAR_FILE}."
-    echo
 fi
