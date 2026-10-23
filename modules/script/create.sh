@@ -47,7 +47,7 @@ TF_VAR_FILE="dev.tfvars"
 # Set either value to false to skip deploying that module.
 # ------------------------------------------------------------
 
-DEPLOY_MONITORING="${DEPLOY_MONITORING:-true}"
+DEPLOY_MONITORING="${DEPLOY_MONITORING:-false}"
 DEPLOY_CICD="${DEPLOY_CICD:-true}"
 
 # ------------------------------------------------------------
