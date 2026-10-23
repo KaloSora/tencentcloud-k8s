@@ -11,7 +11,10 @@ locals {
   harbor_dns_enabled = contains(local.enabled_component_names, "harbor")
   harbor_dns_host    = try(nonsensitive(var.components["harbor"].config["harbor_url"]), "harbor.core.com")
   cluster_dns_base = replace(
-    data.kubernetes_config_map_v1.cluster_dns.data["Corefile"],
+    # A previous targeted destroy may already have removed this managed field.
+    # Keep destroy planning safe; the precondition below still rejects an
+    # empty Corefile when creating/updating the DNS configuration.
+    lookup(data.kubernetes_config_map_v1.cluster_dns.data, "Corefile", ""),
     "/(?m)^    # BEGIN terraform cicd ingress DNS\n(?s:.*?)^    # END terraform cicd ingress DNS\n/",
     ""
   )
