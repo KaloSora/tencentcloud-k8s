@@ -235,6 +235,7 @@ module "component" {
   values = local.rendered_component_values[each.key]
 
   depends_on = [
+    kubernetes_config_map_v1_data.cluster_dns,
     kubernetes_namespace.component,
     kubernetes_role_binding.jenkins_controller_watch_casc_configmaps,
     kubernetes_role_binding.jenkins_controller_schedule_agents,

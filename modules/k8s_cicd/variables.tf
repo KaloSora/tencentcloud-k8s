@@ -62,3 +62,13 @@ variable "k8s_version" {
   type        = string
   description = "Kubernetes version"
 }
+
+variable "ingress_controller_service_fqdn" {
+  description = "Internal Ingress Controller Service DNS name used for Harbor DNS rewrites"
+  type        = string
+  default     = "ingress-nginx-controller.ingress-nginx.svc.cluster.local"
+  validation {
+    condition     = can(regex("^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$", var.ingress_controller_service_fqdn))
+    error_message = "Ingress Controller Service must be a DNS hostname."
+  }
+}
