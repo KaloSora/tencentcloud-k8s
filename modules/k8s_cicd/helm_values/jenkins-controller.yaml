@@ -88,7 +88,7 @@ controller:
                 description('Manual promotion of an existing image. Does not build or publish images. Managed by Jenkins Configuration as Code.')
                 parameters {
                   choiceParam('TARGET_ENV', ['dev', 'uat', 'preprod', 'prod'], 'Target environment; promotion checks and approvals are enforced by the promotion script.')
-                  stringParam('IMAGE_REPOSITORY', 'harbor.core.com/library/com.tencentcloud/k8s-demo-app', 'Existing Harbor image repository without tag or digest.')
+                  stringParam('IMAGE_REPOSITORY', 'harbor.core.com/library/com.tencentcloud.k8s.app/', 'Append the image name, for example k8s-demo-app; must match the successful build repository without tag or digest.')
                   stringParam('IMAGE_DIGEST', '', 'Existing Harbor image digest, sha256:...; never use latest.')
                   stringParam('JIRA', '', 'Jira key recorded in the image, for example JIRA-1.')
                   stringParam('VERSION', '', 'Exact Maven version recorded in the image, for example 1.0.0-SNAPSHOT.')
