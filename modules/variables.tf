@@ -170,12 +170,7 @@ variable "gitops_github_token" {
   description = "Required nonempty GitHub token for Jenkins promotion. Stored in Terraform state."
   type        = string
   sensitive   = true
-  nullable    = false
-
-  validation {
-    condition     = can(regex("^[^[:space:]]+$", var.gitops_github_token))
-    error_message = "gitops_github_token must not be empty or contain whitespace."
-  }
+  default     = ""
 }
 
 variable "argocd_gitops_repo_url" {

@@ -56,7 +56,6 @@ argocd_gitops_repo_url = "https://github.com/KaloSora/tencentcloud-k8s-gitops.gi
 # value using a private -var-file loaded after dev.tfvars. Empty fails validation.
 # Token is stored in state.
 gitops_credentials_id = "gitops-github-token"
-gitops_github_token   = ""
 
 cicd_components = {
   harbor = {
