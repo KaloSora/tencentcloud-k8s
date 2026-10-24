@@ -92,6 +92,7 @@ resource "helm_release" "ingress_nginx" {
   timeout          = local.helm_default_timeout
 
   wait             = true # Wait until all resources are in a ready state before marking the release as successful
+  atomic           = true # If set, the installation process deletes the installation on failure.
 
   values = [
     file("${path.module}/helm_values/ingress-nginx.yaml")

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+data:
+  application_pull_auth.py: |
+{{ .Values.bootstrapScript | indent 4 }}
+  harbor_registry_auth.py: |
+{{ .Values.registryLibrary | indent 4 }}

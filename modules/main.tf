@@ -17,7 +17,8 @@ provider "kubernetes" {
 }
 
 terraform {
-  required_version = "> 0.13.0"
+  # The CI/CD component inventory uses sensitivity helpers and for_each modules.
+  required_version = ">= 1.5.0"
   required_providers {
     tencentcloud = {
       source  = "tencentcloudstack/tencentcloud"
@@ -25,12 +26,16 @@ terraform {
     }
 
     helm = {
-      source = "hashicorp/helm"
+      source  = "hashicorp/helm"
       version = "~> 2.12"
     }
     kubernetes = {
-      source = "hashicorp/kubernetes"
+      source  = "hashicorp/kubernetes"
       version = "~> 2.25"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
     }
   }
 

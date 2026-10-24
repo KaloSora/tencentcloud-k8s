@@ -122,4 +122,7 @@ resource "helm_release" "kube_prometheus_stack" {
       }
     )
   ]
+
+  atomic = true
+  wait   = true
 }

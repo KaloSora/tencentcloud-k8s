@@ -1,0 +1,115 @@
+# Jenkins controller configuration is kept separate from the ephemeral agent
+# configuration in jenkins.yaml.
+controller:
+  # Do not execute builds on the persistent controller pod.
+  numExecutors: 0
+  jenkinsUrlProtocol: "http"
+
+  admin:
+    username: "${jenkins_admin_username}"
+    password: "${jenkins_admin_password}"
+    createSecret: true
+
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    hostName: "${jenkins_url}"
+    path: "/"
+    pathType: Prefix
+    tls: []
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+  # Resolve required dependency versions instead of pulling the latest ones,
+  # which can require a newer JCasC plugin than the chart's pinned version.
+  installLatestPlugins: false
+
+  # Reconcile plugins already on the persistent Jenkins home with this list.
+  # Otherwise the chart's copy-if-missing step retains incompatible old jars.
+  overwritePlugins: true
+
+  # Job DSL creates the automatic multibranch build job and manual promotion
+  # job. Keep the Declarative family aligned: the default aggregator's minimum
+  # versions are older than the extensions retained on an existing PVC.
+  # Timestamper provides the timestamps() option used by both Jenkinsfiles.
+  additionalPlugins:
+    - "job-dsl:3732.v9a_c49a_61a_313"
+    - "pipeline-model-definition:2.2277.v00573e73ddf1"
+    - "pipeline-model-api:2.2277.v00573e73ddf1"
+    - "pipeline-model-extensions:2.2277.v00573e73ddf1"
+    - "workflow-job:1546.v62a_c59c112dd"
+    - "pipeline-stage-step:322.vecffa_99f371c"
+    - "timestamper:1.30"
+
+  JCasC:
+    defaultConfig: true
+    overwriteConfiguration: false
+    configScripts:
+      bootstrap-pipeline: |
+        jobs:
+          - script: >
+              multibranchPipelineJob('${jenkins_pipeline_job_name}') {
+                description('Application multibranch pipeline managed by Jenkins Configuration as Code.')
+                branchSources {
+                  git {
+                    id('${jenkins_pipeline_scm_id}')
+                    remote('${jenkins_pipeline_repository_url}')
+                    includes('${jenkins_pipeline_branch_includes}')
+                    excludes('${jenkins_pipeline_branch_excludes}')
+                  }
+                }
+                factory {
+                  workflowBranchProjectFactory {
+                    scriptPath('${jenkins_pipeline_script_path}')
+                  }
+                }
+                triggers {
+                  periodicFolderTrigger {
+                    interval('${jenkins_pipeline_scan_interval}')
+                  }
+                }
+                orphanedItemStrategy {
+                  discardOldItems {
+                    numToKeep(20)
+                  }
+                }
+              }
+          - script: >
+              pipelineJob('${jenkins_promotion_job_name}') {
+                description('Manual promotion of an existing image. Does not build or publish images. Managed by Jenkins Configuration as Code.')
+                parameters {
+                  choiceParam('TARGET_ENV', ['dev', 'uat', 'preprod', 'prod'], 'Target environment; promotion checks and approvals are enforced by the promotion script.')
+                  stringParam('IMAGE_REPOSITORY', 'harbor.core.com/library/com.tencentcloud.k8s.app/', 'Append the image name, for example k8s-demo-app; must match the successful build repository without tag or digest.')
+                  stringParam('IMAGE_DIGEST', '', 'Existing Harbor image digest, sha256:...; never use latest.')
+                  stringParam('JIRA', '', 'Jira key recorded in the image, for example JIRA-1.')
+                  stringParam('VERSION', '', 'Exact Maven version recorded in the image, for example 1.0.0-SNAPSHOT.')
+                }
+                definition {
+                  cpsScm {
+                    scm {
+                      git {
+                        remote {
+                          url('${jenkins_pipeline_repository_url}')
+                        }
+                        branch('${jenkins_promotion_scm_branch}')
+                      }
+                    }
+                    scriptPath('${jenkins_promotion_script_path}')
+                    lightweight(true)
+                  }
+                }
+              }
+
+serviceAccount:
+  create: true
+  name: "${jenkins_controller_service_account_name}"
+  automountServiceAccountToken: true

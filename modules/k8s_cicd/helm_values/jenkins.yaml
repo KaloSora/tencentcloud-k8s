@@ -1,0 +1,43 @@
+# Jenkins home must survive controller pod replacement. Tencent Cloud CFS
+# supports ReadWriteMany and is provisioned by the configured CSI driver.
+persistence:
+  enabled: true
+  storageClass: "${storage_class}"
+  accessMode: "ReadWriteMany"
+  size: "20Gi"
+
+agent:
+  enabled: true
+  namespace: "${jenkins_agent_namespace}"
+  serviceAccount: "${jenkins_agent_service_account_name}"
+  useDefaultServiceAccount: true
+  podName: "jenkins-agent"
+  customJenkinsLabels:
+    - "jenkins-agent"
+  containerCap: 1
+  instanceCap: 1
+  idleMinutes: 0
+  podRetention: "Never"
+  showRawYaml: false
+  privileged: false
+  restrictedPssSecurityContext: true
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+  workspaceVolume:
+    type: EmptyDir
+    memory: false
+
+rbac:
+  # Agent scheduling permissions are managed explicitly by Terraform.
+  create: false
+
+serviceAccountAgent:
+  create: false
+  name: "${jenkins_agent_service_account_name}"
+  automountServiceAccountToken: false

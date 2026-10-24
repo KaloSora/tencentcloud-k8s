@@ -1,0 +1,86 @@
+# Argo CD
+global:
+  domain: "${argocd_url}"
+
+configs:
+  cm:
+    url: "http://${argocd_url}"
+  secret:
+    # Argo CD stores the admin password as a bcrypt hash, never as plaintext.
+    argocdServerAdminPassword: "${argocd_admin_password_bcrypt}"
+    argocdServerAdminPasswordMtime: "2026-01-01T00:00:00Z"
+  params:
+    # Local development: serve HTTP without a TLS certificate.
+    server.insecure: true
+
+server:
+  ingress:
+    enabled: true
+    controller: generic
+    ingressClassName: "nginx"
+    hostname: "${argocd_url}"
+    tls: false
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+controller:
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+repoServer:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+redis:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+applicationSet:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+notifications:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "250m"
+      memory: "128Mi"
+
+# Uncomment and size it only when durable Redis state and HA are required.
+# redis-ha:
+#   enabled: true
+#   persistentVolume:
+#     enabled: true
+#     storageClass: "${storage_class}"
+#     size: "8Gi"
