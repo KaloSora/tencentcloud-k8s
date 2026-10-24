@@ -1,0 +1,9 @@
+namespaces: []
+registry: harbor.core.com
+harborURL: http://harbor-core.harbor.svc.cluster.local
+adminSecret: harbor-core
+project: library
+durationDays: 90
+bootstrapHash: initial
+bootstrapScript: ""
+registryLibrary: ""

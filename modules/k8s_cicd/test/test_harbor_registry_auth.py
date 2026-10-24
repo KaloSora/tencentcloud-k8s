@@ -1,10 +1,44 @@
 from pathlib import Path
+import io
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+from urllib.error import HTTPError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "script"))
-from harbor_registry_auth import APIError, Bootstrap
+from harbor_registry_auth import API, APIError, Bootstrap
+
+
+class APITests(unittest.TestCase):
+    def test_csrf_challenge_retries_once_with_response_token(self):
+        api = API('http://harbor-core')
+        challenge = HTTPError('http://harbor-core', 403, 'Forbidden',
+                              {'X-Harbor-CSRF-Token': 'csrf-fixture'}, None)
+        response = io.BytesIO(b'{"id": 1}')
+        response.headers = {}
+        api.opener = Mock()
+        api.opener.open.side_effect = [challenge, response]
+        self.assertEqual(api.call('/api/v2.0/robots', 'POST', {}), {'id': 1})
+        request = api.opener.open.call_args_list[1].args[0]
+        self.assertEqual(request.get_header('X-harbor-csrf-token'), 'csrf-fixture')
+        self.assertEqual(request.get_method(), 'POST')
+
+    def test_repeated_csrf_challenge_does_not_retry_forever(self):
+        api = API('http://harbor-core')
+        api.opener = Mock()
+        api.opener.open.side_effect = HTTPError('http://harbor-core', 403, 'Forbidden',
+                                               {'X-Harbor-CSRF-Token': 'csrf-fixture'}, None)
+        with self.assertRaises(APIError):
+            api.call('/api/v2.0/robots', 'POST', {})
+        self.assertEqual(api.opener.open.call_count, 2)
+
+    def test_ordinary_forbidden_is_not_retried(self):
+        api = API('http://harbor-core')
+        api.opener = Mock()
+        api.opener.open.side_effect = HTTPError('http://harbor-core', 403, 'Forbidden', {}, None)
+        with self.assertRaises(APIError):
+            api.call('/api/v2.0/robots', 'POST', {})
+        self.assertEqual(api.opener.open.call_count, 1)
 
 
 class FakeAPI:

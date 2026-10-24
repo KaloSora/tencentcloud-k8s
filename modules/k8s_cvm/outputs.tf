@@ -12,3 +12,13 @@ output "private_ips" {
   description = "CVM private ip addresses"
   value       = [for instance in tencentcloud_instance.k8s_server : instance.private_ip]
 }
+
+output "registry_nodes" {
+  description = "Node identities and SSH endpoints for post-cluster registry configuration"
+  value = {
+    for key, instance in tencentcloud_instance.k8s_server : key => {
+      instance_id = instance.id
+      host        = instance.public_ip
+    }
+  }
+}

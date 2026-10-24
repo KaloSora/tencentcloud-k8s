@@ -1,0 +1,5 @@
+apiVersion: v2
+name: harbor-app-pull
+description: Application Harbor pull credentials and scheduled renewal
+type: application
+version: 0.1.0

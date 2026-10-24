@@ -29,6 +29,9 @@ class API:
                                   HTTPSHandler(context=context))
 
     def call(self, path, method="GET", body=None):
+        return self._call(path, method, body, retry_csrf=True)
+
+    def _call(self, path, method, body, retry_csrf):
         headers = dict(self.headers, **{"Content-Type": "application/json"})
         if self.csrf:
             headers["X-Harbor-CSRF-Token"] = self.csrf
@@ -40,6 +43,10 @@ class API:
                 data = response.read()
                 return json.loads(data) if data else None
         except HTTPError as error:
+            csrf = error.headers.get("X-Harbor-CSRF-Token") if error.headers else None
+            if error.code == 403 and csrf and retry_csrf:
+                self.csrf = csrf
+                return self._call(path, method, body, retry_csrf=False)
             raise APIError(error.code) from None
 
 

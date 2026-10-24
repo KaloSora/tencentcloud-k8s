@@ -25,8 +25,8 @@ set -Eeuo pipefail
 #   3. module.k8s_cfs
 #   4. module.k8s_ingress
 #   5. module.k8s_monitoring
-#   6. module.k8s_cicd
-#   7. module.k8s_app
+#   6. module.k8s_app
+#   7. module.k8s_cicd
 # ============================================================
 
 set -o pipefail
@@ -226,28 +226,28 @@ else
 fi
 
 # ------------------------------------------------------------
-# STEP 6 - CICD
+# STEP 6 - Application promotion namespaces
+# ------------------------------------------------------------
+
+run_step "6/7 - Create Application Promotion Namespaces" \
+    terraform apply \
+    -target=module.k8s_app \
+    -var-file="${TF_VAR_FILE}" \
+    -auto-approve
+
+# ------------------------------------------------------------
+# STEP 7 - CICD and application registry access
 # ------------------------------------------------------------
 
 if [[ "${DEPLOY_CICD}" == "true" ]]; then
-    run_step "6/7 - Deploy Kubernetes CICD" \
+    run_step "7/7 - Deploy Kubernetes CICD and Application Registry Access" \
         terraform apply \
         -target=module.k8s_cicd \
         -var-file="${TF_VAR_FILE}" \
         -auto-approve
 else
-    echo "[SKIP] STEP 6/7 - CI/CD deployment is disabled"
+    echo "[SKIP] STEP 7/7 - CI/CD deployment is disabled"
 fi
-
-# ------------------------------------------------------------
-# STEP 7 - Application promotion namespaces
-# ------------------------------------------------------------
-
-run_step "7/7 - Create Application Promotion Namespaces" \
-    terraform apply \
-    -target=module.k8s_app \
-    -var-file="${TF_VAR_FILE}" \
-    -auto-approve
 
 # ------------------------------------------------------------
 # Final State

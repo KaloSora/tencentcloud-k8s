@@ -95,3 +95,49 @@ variable "ingress_controller_service_fqdn" {
     error_message = "Ingress Controller Service must be a DNS hostname."
   }
 }
+
+variable "registry_nodes" {
+  description = "Docker nodes configured after Ingress exists; instance identity triggers reprovisioning"
+  type        = map(object({ instance_id = string, host = string }))
+  default     = {}
+}
+
+variable "registry_ssh_user" {
+  type        = string
+  default     = "root"
+  description = "Existing privileged SSH account used to configure the node's Docker daemon"
+}
+
+variable "registry_ssh_key_path" {
+  type        = string
+  default     = ""
+  description = "Existing local SSH private key path; key material is not stored in registry resource input"
+}
+
+variable "application_namespaces" {
+  type        = set(string)
+  default     = []
+  description = "Existing application namespaces receiving pull-only Harbor robots and Secrets"
+  validation {
+    condition = alltrue([
+      for name in var.application_namespaces : can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", name))
+    ])
+    error_message = "Application namespace names must be valid Kubernetes namespace names."
+  }
+}
+
+variable "application_robot_duration_days" {
+  type        = number
+  default     = 90
+  description = "Lifetime of application pull-only robots; a daily CronJob renews within seven days of expiry"
+  validation {
+    condition     = var.application_robot_duration_days >= 14 && floor(var.application_robot_duration_days) == var.application_robot_duration_days
+    error_message = "Application robot duration must be an integer of at least 14 days."
+  }
+}
+
+variable "application_pull_bootstrap_revision" {
+  type        = string
+  default     = "1"
+  description = "Bump to force the initial pull credential verification Job to run again"
+}
