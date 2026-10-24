@@ -90,7 +90,8 @@ controller:
                   choiceParam('TARGET_ENV', ['dev', 'uat', 'preprod', 'prod'], 'Target environment; promotion checks and approvals are enforced by the promotion script.')
                   stringParam('IMAGE_REPOSITORY', 'harbor.core.com/library/com.tencentcloud/k8s-demo-app', 'Existing Harbor image repository without tag or digest.')
                   stringParam('IMAGE_DIGEST', '', 'Existing Harbor image digest, sha256:...; never use latest.')
-                  stringParam('SOURCE_COMMIT', '', 'Full application commit SHA associated with the selected image, for traceability.')
+                  stringParam('JIRA', '', 'Jira key recorded in the image, for example JIRA-1.')
+                  stringParam('VERSION', '', 'Exact Maven version recorded in the image, for example 1.0.0-SNAPSHOT.')
                 }
                 definition {
                   cpsScm {

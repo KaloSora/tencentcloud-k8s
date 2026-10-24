@@ -52,6 +52,12 @@ helm_kube_prometheus_stack_version = "88.6.1"
 
 argocd_gitops_repo_url = "https://github.com/KaloSora/tencentcloud-k8s-gitops.git"
 
+# Jenkins promotion credential. Keep the committed token empty; supply the real
+# value using a private -var-file loaded after dev.tfvars. Empty fails validation.
+# Token is stored in state.
+gitops_credentials_id = "gitops-github-token"
+gitops_github_token   = ""
+
 cicd_components = {
   harbor = {
     enabled         = true

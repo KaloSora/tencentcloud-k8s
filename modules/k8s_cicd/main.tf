@@ -232,7 +232,10 @@ module "component" {
     wait          = nonsensitive(var.components[each.key].wait)
     wait_for_jobs = nonsensitive(var.components[each.key].wait_for_jobs)
   }
-  values = local.rendered_component_values[each.key]
+  values = concat(
+    local.rendered_component_values[each.key],
+    each.key == "jenkins" ? local.jenkins_gitops_values : []
+  )
 
   depends_on = [
     kubernetes_config_map_v1_data.cluster_dns,

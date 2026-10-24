@@ -47,6 +47,29 @@ variable "components" {
   }
 }
 
+variable "gitops_credentials_id" {
+  description = "Jenkins Secret text credential ID used by the GitOps promotion pipeline"
+  type        = string
+  default     = "gitops-github-token"
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9][A-Za-z0-9_.-]*$", var.gitops_credentials_id))
+    error_message = "gitops_credentials_id must contain only letters, numbers, dots, underscores and hyphens, starting with a letter or number."
+  }
+}
+
+variable "gitops_github_token" {
+  description = "Required nonempty GitHub token for Jenkins promotion. Stored in Terraform state."
+  type        = string
+  sensitive   = true
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[^[:space:]]+$", var.gitops_github_token))
+    error_message = "gitops_github_token must not be empty or contain whitespace."
+  }
+}
+
 variable "argocd_gitops_repo_url" {
   description = "GitOps repository read by the Argo CD bootstrap Application; empty disables bootstrap"
   type        = string

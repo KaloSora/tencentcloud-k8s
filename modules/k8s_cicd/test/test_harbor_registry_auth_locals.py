@@ -70,7 +70,8 @@ class BootstrapLocalsTests(unittest.TestCase):
             for components, expected, enabled in cases:
                 with self.subTest(components=list(components)):
                     (root / "case.tfvars.json").write_text(json.dumps({
-                        "components": components, "storage_class_name": "test", "k8s_version": "1.28.3"}))
+                        "components": components, "storage_class_name": "test", "k8s_version": "1.28.3",
+                        "gitops_github_token": "fixture-token"}))
                     run("plan", "-input=false", "-no-color", "-var-file=case.tfvars.json", "-out=case.tfplan")
                     plan = json.loads(run("show", "-json", "case.tfplan"))
                     self.assertEqual(plan["planned_values"]["outputs"]["settings"]["value"],
