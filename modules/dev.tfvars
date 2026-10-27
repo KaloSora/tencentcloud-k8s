@@ -50,7 +50,8 @@ helm_grafana_url                   = "grafana.core.com"
 helm_grafana_password              = "Grafana12345"
 helm_kube_prometheus_stack_version = "88.6.1"
 
-argocd_gitops_repo_url = "https://github.com/KaloSora/tencentcloud-k8s-gitops.git"
+argocd_infra_gitops_repo_url = "https://github.com/KaloSora/tencentcloud-infra-gitops.git"
+argocd_gitops_repo_url       = "https://github.com/KaloSora/tencentcloud-k8s-gitops.git"
 
 # Jenkins promotion credential. Keep the committed token empty; supply the real
 # value using a private -var-file loaded after dev.tfvars. Empty fails validation.
@@ -58,6 +59,21 @@ argocd_gitops_repo_url = "https://github.com/KaloSora/tencentcloud-k8s-gitops.gi
 gitops_credentials_id = "gitops-github-token"
 
 cicd_components = {
+  crossplane = {
+    enabled         = true
+    release_name    = "crossplane"
+    namespace       = "crossplane-system"
+    repository      = "https://charts.crossplane.io/stable"
+    chart           = "crossplane"
+    version         = "1.20.3"
+    timeout         = 600
+    atomic          = true
+    wait            = true
+    wait_for_jobs   = false
+    value_templates = ["crossplane.yaml"]
+    config          = {}
+  }
+
   harbor = {
     enabled         = true
     release_name    = "harbor"

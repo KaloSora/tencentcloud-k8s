@@ -510,6 +510,9 @@ COS Terraform backend; the in-cluster handling above specifically keeps the
 Jenkins robot password out of local files and Terraform state. This change does
 not resolve the application agent's separate non-root container configuration.
 
+Crossplane installation and the separate infrastructure GitOps bootstrap are documented in
+[`modules/k8s_cicd/CROSSPLANE.md`](modules/k8s_cicd/CROSSPLANE.md).
+
 CI/CD Helm releases are created by the reusable `helm_component` module. Each
 entry in `cicd_components` defines its namespace, chart, version, values
 templates, lifecycle flags, and component-specific configuration. A regular
