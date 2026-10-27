@@ -181,6 +181,18 @@ variable "argocd_infra_gitops_repo_url" {
   default     = ""
 }
 
+variable "crossplane_region" {
+  description = "Region used by the Crossplane Tencent Cloud Provider; empty inherits the foundation region"
+  type        = string
+  default     = ""
+  nullable    = false
+
+  validation {
+    condition     = var.crossplane_region == "" || can(regex("^[a-z]+(-[a-z0-9]+)+$", var.crossplane_region))
+    error_message = "crossplane_region must be empty or a Tencent Cloud region name such as ap-guangzhou."
+  }
+}
+
 variable "argocd_gitops_repo_url" {
   description = "GitOps repository read by the Argo CD bootstrap Application; empty disables bootstrap"
   type        = string

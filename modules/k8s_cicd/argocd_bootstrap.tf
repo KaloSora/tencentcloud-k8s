@@ -162,5 +162,5 @@ resource "helm_release" "argocd_infra_bootstrap" {
 
   # Wait for both controllers and the Crossplane core CRDs. Provider CRDs
   # require a separate readiness gate before syncing dependent declarations.
-  depends_on = [module.component]
+  depends_on = [module.component, kubernetes_secret_v1.crossplane_tencentcloud]
 }

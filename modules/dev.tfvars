@@ -51,6 +51,7 @@ helm_grafana_password              = "Grafana12345"
 helm_kube_prometheus_stack_version = "88.6.1"
 
 argocd_infra_gitops_repo_url = "https://github.com/KaloSora/tencentcloud-infra-gitops.git"
+crossplane_region            = "ap-guangzhou"
 argocd_gitops_repo_url       = "https://github.com/KaloSora/tencentcloud-k8s-gitops.git"
 
 # Jenkins promotion credential. Keep the committed token empty; supply the real

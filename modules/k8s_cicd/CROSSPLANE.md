@@ -11,7 +11,8 @@ Terraform ownership.
 `dev.tfvars` enables the `crossplane` entry in `cicd_components`, using the
 official `https://charts.crossplane.io/stable` repository and chart `1.20.3`.
 `helm_values/crossplane.yaml` sets resources and container security settings.
-No Providers, credentials, or cloud resources are installed by this change.
+No Providers or cloud resources are installed by this module. When Crossplane
+is enabled, Terraform creates the Tencent Cloud credential Secret described below.
 
 The new optional input is passed from the root module to `k8s_cicd`:
 
@@ -37,6 +38,67 @@ deletion finalizer. Their project permits only AppProject and Application
 objects in the Argo CD namespace. The repository's separate `infrastructure`
 project controls permissions for future Provider/resource Applications.
 Bootstrap waits for component Helm releases, including Crossplane core.
+It also waits for the Terraform-managed Tencent Cloud credential Secret.
+
+## Terraform-managed Tencent Cloud credentials
+
+The root module passes its existing sensitive `secret_id` and `secret_key`
+inputs to `k8s_cicd`. When the `crossplane` component is enabled, the module
+creates `kubernetes_secret_v1.crossplane_tencentcloud[0]`, named
+`tencentcloud-credentials` in the configured Crossplane component namespace.
+Secret key `credentials` contains JSON with `secret_id`, `secret_key` and
+`region`. The Kubernetes provider handles base64 encoding. Empty or whitespace
+credentials fail the plan before the Secret is created.
+
+The new root input `crossplane_region` is optional: empty inherits `region`.
+`dev.tfvars` explicitly sets it to `ap-guangzhou` for the COS pilot while
+leaving the foundation's `ap-hongkong` region unchanged. Changing it changes
+the Provider's default region for all resources using this credential Secret;
+review existing managed resources before switching regions.
+
+Provide the existing Terraform credentials through approved environment inputs
+(`TF_VAR_secret_id`, `TF_VAR_secret_key`) or private Terraform variables. No
+extra one-time Secret script is required on fresh clusters. Terraform manages
+credential changes on subsequent applies. A ProviderConfig in Git should only
+reference the Secret:
+
+```yaml
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      namespace: crossplane-system
+      name: tencentcloud-credentials
+      key: credentials
+```
+
+Match the namespace if the component inventory uses a custom namespace. Do not
+also manage this Secret with Argo CD or the former script. The supplied identity
+is the same identity used by the foundation; its existing permissions become
+available to the Provider. Review those permissions before production use.
+
+Sensitive inputs redact routine CLI output but do not encrypt Terraform state.
+The complete credentials are stored in state and may be present in saved plans
+and historical state versions. Protect backend access, encryption and plan files;
+do not commit or print them. Disabling the Crossplane component or destroying
+the module also plans deletion of this Secret. Review the plan before applying.
+
+If `tencentcloud-credentials` already exists from a script, first check whether
+Terraform already tracks it. If it is untracked, import it once rather than
+deleting/recreating it:
+
+```sh
+cd modules
+terraform import -var-file=dev.tfvars \
+  'module.k8s_cicd.kubernetes_secret_v1.crossplane_tencentcloud[0]' \
+  crossplane-system/tencentcloud-credentials
+```
+
+Supply the usual private variables as needed, and use the actual namespace.
+Import writes Terraform state and requires the normal review/approval process.
+Then review the plan before applying: imported contents may differ from the
+configured credentials or region. For a fresh cluster, a normal approved
+`k8s_cicd` apply creates the Secret without an import.
 
 Argo CD explicitly uses annotation resource tracking and excludes generated
 ProviderConfigUsage objects. Tencent Cloud managed-resource health requires
