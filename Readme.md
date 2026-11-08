@@ -98,32 +98,14 @@ The project focuses on:
 - Automated lifecycle management
 
 ## Architecture
-```text
-                        Tencent Cloud
-                             |
-              +--------------+--------------+
-              |                             |
-          VPC / Subnet                  COS Backend
-              |
-      +-------+-------+
-      |               |
-   Control Plane    Worker Nodes
-      |               |
-      +-------+-------+
-              |
-        Kubernetes
-              |
-    +---------+---------+
-    |         |         |
-   CFS     Ingress   Monitoring
-    |         |         |
-    |      nginx      |
-    |              Prometheus
-    |              Grafana
-    |              Loki
-    |
- CFS CSI
-```
+
+![Tencent Cloud Self-Managed Kubernetes Architecture](docs/assets/architecture.png)
+
+The diagram reflects the current repository configuration: cost-saving mode with
+one control-plane node and one shared DevOps worker. Monitoring is optional and
+skipped by the creation script by default. Live deployment state has not been verified.
+
+[Architecture details and CI/CD flow](docs/architecture.md) · [Scalable SVG](docs/assets/architecture.svg)
 
 # Infrastructure
 
