@@ -6,7 +6,7 @@ import re
 ROOT = Path(__file__).resolve().parent
 parts = ['''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1450" viewBox="0 0 1600 1450" role="img" aria-labelledby="title desc">
 <title id="title">Tencent Cloud Self-Managed Kubernetes Architecture</title>
-<desc id="desc">Repository configuration: one control-plane CVM and one shared DevOps worker. Terraform provisions the foundation. Jenkins, Harbor and Argo CD support CI/CD. CFS provides dynamic storage. Monitoring is optional. Live deployment has not been verified.</desc>
+<desc id="desc">Architecture: one control-plane CVM and one shared DevOps worker. Terraform provisions the foundation. Jenkins, Harbor and Argo CD support CI/CD. CFS provides dynamic storage. Monitoring is shown enabled as the intended configuration; deployment code will be updated separately. Live deployment has not been verified.</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" fill="#7185a2"/></marker></defs>
 <style>text{font-family:Arial,Helvetica,sans-serif;fill:#17314f}.title{font-size:36px;font-weight:700}.section{font-size:21px;font-weight:700}.name{font-size:21px;font-weight:700}.small{font-size:17px;fill:#526982}.tiny{font-size:15px;fill:#526982}.label{font-size:15px;fill:#526982;font-weight:700;letter-spacing:1.5px}</style>
 <rect width="1600" height="1450" fill="#f5f8fc"/>
@@ -36,7 +36,7 @@ def card(x,y,w,h,name,lines,brand=None,color='#326ce5',optional=False):
     for i,s in enumerate(lines): text(x+22,y+78+i*25,s)
 
 text(60,62,'Tencent Cloud | Self-Managed Kubernetes','title')
-text(60,98,'Current repository configuration · Cost-saving mode · 1 control plane + 1 shared worker')
+text(60,98,'Cost-saving mode · 1 control plane + 1 shared worker · Monitoring enabled in target architecture')
 text(60,140,'PROVISIONING & DELIVERY','label')
 card(60,160,440,110,'Terraform + Helm',['CVM bootstrap · platform releases'],'terraform','#844fba')
 icon('helm',438,184,34,'#0f5d9b')
@@ -72,12 +72,12 @@ line([(1329,750),(1329,775),(982,775),(982,795)])
 text(1062,767,'sync application manifests','tiny')
 line([(1370,750),(1370,795)],True)
 text(1380,781,'infra','tiny')
-rect(480,970,1005,105,'#ffffff','#b9c8da',True)
+rect(480,970,1005,105,'#ffffff','#b9c8da')
 icon('prometheus',502,993,34,'#e6522c')
 icon('grafana',552,993,34,'#f46800')
-text(610,1008,'Optional Observability','name')
+text(610,1008,'Observability','name')
 text(610,1041,'Prometheus · Alertmanager · Grafana · Promtail → Loki')
-text(502,1060,'create.sh: skipped by default','tiny')
+text(502,1060,'Monitoring: enabled','tiny')
 
 card(90,800,330,225,'Cluster Foundation',['Calico VXLAN','Pod CIDR: 192.168.0.0/16','CoreDNS · kube-proxy IPVS','Docker + cri-dockerd','kubelet on each node'])
 line([(420,605),(445,605)],False)
