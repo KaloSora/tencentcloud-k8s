@@ -47,6 +47,34 @@ variable "components" {
   }
 }
 
+variable "secret_id" {
+  description = "Tencent Cloud SecretId supplied to Crossplane when enabled; stored in Terraform state"
+  type        = string
+  sensitive   = true
+  default     = ""
+  nullable    = false
+}
+
+variable "secret_key" {
+  description = "Tencent Cloud SecretKey supplied to Crossplane when enabled; stored in Terraform state"
+  type        = string
+  sensitive   = true
+  default     = ""
+  nullable    = false
+}
+
+variable "crossplane_region" {
+  description = "Region included in the Crossplane Tencent Cloud credential JSON"
+  type        = string
+  default     = "ap-guangzhou"
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z]+(-[a-z0-9]+)+$", var.crossplane_region))
+    error_message = "crossplane_region must be a Tencent Cloud region name such as ap-guangzhou."
+  }
+}
+
 variable "gitops_credentials_id" {
   description = "Jenkins Secret text credential ID used by the GitOps promotion pipeline"
   type        = string
@@ -68,6 +96,12 @@ variable "gitops_github_token" {
     condition     = can(regex("^[^[:space:]]+$", var.gitops_github_token))
     error_message = "gitops_github_token must not be empty or contain whitespace."
   }
+}
+
+variable "argocd_infra_gitops_repo_url" {
+  description = "Infrastructure GitOps repository read by the dedicated Argo CD bootstrap; empty disables it"
+  type        = string
+  default     = ""
 }
 
 variable "argocd_gitops_repo_url" {

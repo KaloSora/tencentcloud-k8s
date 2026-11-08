@@ -2,12 +2,14 @@ variable "secret_id" {
   type        = string
   description = "tencent cloud access id"
   default     = ""
+  sensitive   = true
 }
 
 variable "secret_key" {
   type        = string
   description = "tencent cloud access key"
   default     = ""
+  sensitive   = true
 }
 
 # variable "password" {
@@ -171,6 +173,24 @@ variable "gitops_github_token" {
   type        = string
   sensitive   = true
   default     = ""
+}
+
+variable "argocd_infra_gitops_repo_url" {
+  description = "Infrastructure GitOps repository read by the dedicated Argo CD bootstrap; empty disables it"
+  type        = string
+  default     = ""
+}
+
+variable "crossplane_region" {
+  description = "Region used by the Crossplane Tencent Cloud Provider; empty inherits the foundation region"
+  type        = string
+  default     = ""
+  nullable    = false
+
+  validation {
+    condition     = var.crossplane_region == "" || can(regex("^[a-z]+(-[a-z0-9]+)+$", var.crossplane_region))
+    error_message = "crossplane_region must be empty or a Tencent Cloud region name such as ap-guangzhou."
+  }
 }
 
 variable "argocd_gitops_repo_url" {

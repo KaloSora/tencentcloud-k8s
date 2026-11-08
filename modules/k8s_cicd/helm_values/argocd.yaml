@@ -5,6 +5,43 @@ global:
 configs:
   cm:
     url: "http://${argocd_url}"
+    application.resourceTrackingMethod: annotation
+    resource.exclusions: |
+      - apiGroups:
+          - "*"
+        kinds:
+          - ProviderConfigUsage
+        clusters:
+          - "*"
+    resource.customizations: |
+      "tencentcloud.crossplane.io/ProviderConfig":
+        health.lua: |
+          -- This object references credentials; existence does not verify auth.
+          return { status = "Healthy", message = "Provider configuration declared" }
+      "*.tencentcloud.crossplane.io/*":
+        health.lua: |
+          local health = { status = "Progressing", message = "Waiting for reconciliation" }
+          if obj.status == nil or obj.status.conditions == nil then
+            return health
+          end
+          local ready = false
+          local synced = false
+          for _, condition in ipairs(obj.status.conditions) do
+            if (condition.type == "Synced" or condition.type == "LastAsyncOperation") and condition.status == "False" then
+              return { status = "Degraded", message = condition.message or condition.reason or "Reconciliation failed" }
+            end
+            if condition.type == "Ready" and condition.status == "True" then
+              ready = true
+            end
+            if condition.type == "Synced" and condition.status == "True" then
+              synced = true
+            end
+          end
+          if ready and synced then
+            health.status = "Healthy"
+            health.message = "Resource ready and reconciled"
+          end
+          return health
   secret:
     # Argo CD stores the admin password as a bcrypt hash, never as plaintext.
     argocdServerAdminPassword: "${argocd_admin_password_bcrypt}"

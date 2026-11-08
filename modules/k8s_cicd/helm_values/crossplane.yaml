@@ -1,0 +1,47 @@
+# Providers and cloud credentials are deliberately configured separately.
+provider:
+  packages: []
+configuration:
+  packages: []
+function:
+  packages: []
+
+resourcesCrossplane:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+resourcesRBACManager:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 512Mi
+
+podSecurityContextCrossplane:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+podSecurityContextRBACManager:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContextCrossplane:
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+securityContextRBACManager:
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]

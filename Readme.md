@@ -98,32 +98,14 @@ The project focuses on:
 - Automated lifecycle management
 
 ## Architecture
-```text
-                        Tencent Cloud
-                             |
-              +--------------+--------------+
-              |                             |
-          VPC / Subnet                  COS Backend
-              |
-      +-------+-------+
-      |               |
-   Control Plane    Worker Nodes
-      |               |
-      +-------+-------+
-              |
-        Kubernetes
-              |
-    +---------+---------+
-    |         |         |
-   CFS     Ingress   Monitoring
-    |         |         |
-    |      nginx      |
-    |              Prometheus
-    |              Grafana
-    |              Loki
-    |
- CFS CSI
-```
+
+![Tencent Cloud Self-Managed Kubernetes Architecture](docs/assets/architecture.png)
+
+The diagram reflects the current repository configuration: cost-saving mode with
+one control-plane node and one shared DevOps worker. Monitoring is optional and
+skipped by the creation script by default. Live deployment state has not been verified.
+
+[Architecture details and CI/CD flow](docs/architecture.md) · [Scalable SVG](docs/assets/architecture.svg)
 
 # Infrastructure
 
@@ -509,6 +491,9 @@ other Helm values continue to follow the platform's configuration and encrypted
 COS Terraform backend; the in-cluster handling above specifically keeps the
 Jenkins robot password out of local files and Terraform state. This change does
 not resolve the application agent's separate non-root container configuration.
+
+Crossplane installation and the separate infrastructure GitOps bootstrap are documented in
+[`modules/k8s_cicd/CROSSPLANE.md`](modules/k8s_cicd/CROSSPLANE.md).
 
 CI/CD Helm releases are created by the reusable `helm_component` module. Each
 entry in `cicd_components` defines its namespace, chart, version, values
