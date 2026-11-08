@@ -1,6 +1,6 @@
 # Tencent Cloud Self-Managed Kubernetes Architecture
 
-Based on this repository's Terraform, bootstrap scripts and Helm values. Reviewed on 2026-11-08. This describes repository configuration; live cloud and cluster state have not been verified.
+Based on this repository's Terraform, bootstrap scripts and Helm values. Reviewed on 2026-11-08. Monitoring is shown enabled in the target architecture; the creation script default will be updated separately. Live cloud and cluster state have not been verified.
 
 ![Tencent Cloud self-managed Kubernetes architecture](assets/architecture.png)
 
@@ -13,7 +13,7 @@ Based on this repository's Terraform, bootstrap scripts and Helm values. Reviewe
 - **Delivery:** Jenkins, Harbor, Argo CD and Crossplane Core are enabled in the component inventory. Plane is disabled. Jenkins schedules ephemeral build Pods in `cicd-build`.
 - **Applications:** Terraform creates `dev`, `uat`, `preprod` and `prod` namespaces with Restricted PSA enforcement. Business deployments and promotion policy depend on external GitOps declarations.
 - **Storage:** PVCs use a StorageClass backed by the CFS CSI driver. CFS is dynamically provisioned, with NFS v3 mounts, an access group and CIDR rules. The StorageClass reclaim policy is `Delete`.
-- **Observability:** Prometheus, Alertmanager, Grafana, Loki and Promtail are configured. `modules/script/create.sh` defaults to `DEPLOY_MONITORING=false`; a regular full Terraform deployment still includes the monitoring module.
+- **Observability:** Prometheus, Alertmanager, Grafana, Loki and Promtail are shown enabled in the diagram. `modules/script/create.sh` still defaults to `DEPLOY_MONITORING=false` pending a separate code update; a regular full Terraform deployment already includes the monitoring module.
 - **State:** Terraform uses an encrypted COS remote-state backend.
 
 Solid arrows show the principal configured relationships. Dashed arrows or borders identify optional components or dependencies on external declarations. The overview groups components by responsibility and does not depict every runtime connection.
